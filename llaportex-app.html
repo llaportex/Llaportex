@@ -1027,14 +1027,14 @@ async function importarExtracto(e){
   if(!file)return;
   document.getElementById('extracto-file').value='';
   toast('Analizando extracto con IA...','info');
-  
-  // Leer como texto (para PDF ya tenemos el texto extraído por el navegador)
-  // Usamos la API de Claude para analizar
   var reader=new FileReader();
   reader.onload=async function(ev){
     var base64=ev.target.result.split(',')[1];
-    var mediaType=file.type==='application/pdf'?'application/pdf':'text/plain';
-    
+    var isPDF=file.type==='application/pdf';
+    var promptText='Extrae los datos del extracto de comisiones. Responde SOLO con este JSON exacto sin texto adicional: {"fabricante":"nombre empresa que emite","fecha":"YYYY-MM-DD","lineas":[{"nFactura":"","fecha":"YYYY-MM-DD","codigoCliente":"","cliente":"nombre","importeFactura":0.00,"importeMercancia":0.00,"comision":0.00}]}';
+    var msgContent=isPDF
+      ?[{type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}},{type:'text',text:promptText}]
+      :[{type:'text',text:promptText}];
     try{
       var resp=await fetch('https://api.anthropic.com/v1/messages',{
         method:'POST',
@@ -1042,20 +1042,12 @@ async function importarExtracto(e){
         body:JSON.stringify({
           model:'claude-sonnet-4-20250514',
           max_tokens:2000,
-          system:'Eres un asistente que extrae datos de extractos de comisiones. Responde SOLO con JSON válido, sin texto adicional ni markdown.',
-          messages:[{
-            role:'user',
-            content:[
-              {type:mediaType==='application/pdf'?'document':'text',
-                source:{type:'base64',media_type:mediaType,data:base64}},
-              {type:'text',text:'Extrae todos los datos de este extracto de comisiones y devuelve SOLO este JSON:
-{"fabricante":"nombre del fabricante/empresa que emite","fecha":"YYYY-MM-DD","lineas":[{"nFactura":"","fecha":"YYYY-MM-DD","codigoCliente":"","cliente":"nombre cliente","importeFactura":0.00,"importeMercancia":0.00,"comision":0.00}]}'}
-            ]
-          }]
+          system:'Eres un asistente que extrae datos de extractos de comisiones. Responde SOLO con JSON valido sin markdown.',
+          messages:[{role:'user',content:msgContent}]
         })
       });
       var data=await resp.json();
-      var txt=data.content[0].text.replace(/```json|```/g,'').trim();
+      var txt=(data.content[0].text||'').replace(/```json|```/g,'').trim();
       var parsed=JSON.parse(txt);
       _extractoPendiente=parsed;
       mostrarConfirmacionExtracto(parsed);
@@ -1231,9 +1223,9 @@ function renderAdminUsers(){
         '<div class="user-name">'+u.name+'</div>'+
         '<div class="user-role">@'+u.username+' · '+(u.role==='admin'?'Administrador':'Agente')+'</div>'+
         '<div class="perm-grid" style="margin-top:6px">'+
-          '<button class="perm-toggle'+(p.pedidos!==false?' on':'')+'" onclick="togglePerm('+u.id+','pedidos',this)">📋 Pedidos</button>'+
-          '<button class="perm-toggle'+(p.clientes!==false?' on':'')+'" onclick="togglePerm('+u.id+','clientes',this)">👥 Clientes</button>'+
-          '<button class="perm-toggle'+(p.ventas?' on':'')+'" onclick="togglePerm('+u.id+','ventas',this)">📊 Ventas</button>'+
+          '<button class="perm-toggle'+(p.pedidos!==false?' on':'')+'" onclick="togglePerm('+u.id+',\'pedidos\',this)">📋 Pedidos</button>'+
+          '<button class="perm-toggle'+(p.clientes!==false?' on':'')+'" onclick="togglePerm('+u.id+',\'clientes\',this)">👥 Clientes</button>'+
+          '<button class="perm-toggle'+(p.ventas?' on':'')+'" onclick="togglePerm('+u.id+',\'ventas\',this)">📊 Ventas</button>'+
         '</div>'+
       '</div>'+
       (u.role!=='admin'?'<button onclick="eliminarUsuario('+u.id+')" style="color:var(--danger);border:none;background:none;cursor:pointer;padding:4px;font-size:18px">✕</button>':'')+
