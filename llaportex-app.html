@@ -218,10 +218,10 @@ button{cursor:pointer}
       <label>Contraseña</label>
       <div style="position:relative">
         <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" style="width:100%;padding:14px 48px 14px 16px;border:1.5px solid var(--border);border-radius:var(--r);font-size:16px;background:var(--surface2)">
-        <button type="button" onclick="togglePassVis('login-pass',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--text2);font-size:18px;padding:4px">👁</button>
+        <button type="button" onclick="togglePassVis('login-pass',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--text2);font-size:20px;padding:8px;z-index:10;-webkit-tap-highlight-color:transparent">👁</button>
       </div>
     </div>
-    <button class="btn-login" onclick="doLogin()">Entrar</button>
+    <button class="btn-login" onclick="doLogin()" type="button">Entrar</button>
     <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
   </div>
 </div>
@@ -658,14 +658,22 @@ function togglePassVis(id,btn){
 function doLogin(){
   var u=document.getElementById('login-user').value.trim();
   var p=document.getElementById('login-pass').value;
+  // Asegurar que existe el admin antes de buscar
   var users=getUsers();
+  var hasAdmin=users.find(function(x){return x.username==='admin'});
+  if(!hasAdmin){
+    users.push({id:1,name:'Xavi Llamas',username:'admin',password:'llaportex2026',role:'admin',perms:{pedidos:true,clientes:true,ventas:true}});
+    saveUsers(users);
+    users=getUsers();
+  }
   var found=users.find(function(x){return x.username===u&&x.password===p});
+  var errEl=document.getElementById('login-error');
   if(!found){
-    document.getElementById('login-error').style.display='block';
-    document.getElementById('login-pass').value='';
+    errEl.textContent='Usuario o contraseña incorrectos (usuarios: '+users.map(function(x){return x.username}).join(', ')+')';
+    errEl.style.display='block';
     return;
   }
-  document.getElementById('login-error').style.display='none';
+  errEl.style.display='none';
   currentUser=found;
   sessionStorage.setItem('ll_session',JSON.stringify(found));
   loginSuccess();
