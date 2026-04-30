@@ -216,7 +216,10 @@ button{cursor:pointer}
     </div>
     <div class="login-field">
       <label>Contraseña</label>
-      <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+      <div style="position:relative">
+        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()" style="width:100%;padding:14px 48px 14px 16px;border:1.5px solid var(--border);border-radius:var(--r);font-size:16px;background:var(--surface2)">
+        <button type="button" onclick="togglePassVis('login-pass',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--text2);font-size:18px;padding:4px">👁</button>
+      </div>
     </div>
     <button class="btn-login" onclick="doLogin()">Entrar</button>
     <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
@@ -244,6 +247,7 @@ button{cursor:pointer}
     <div style="padding:4px 12px 8px;font-size:12px;color:var(--text2)" id="menu-role"></div>
     <hr style="border:none;border-top:1px solid var(--border);margin:4px 0">
     <button onclick="goScreen('admin');toggleUserMenu()" style="width:100%;text-align:left;padding:8px 12px;border:none;background:none;font-size:13px;cursor:pointer" id="admin-btn">⚙️ Gestionar usuarios</button>
+    <button onclick="goScreen('config');toggleUserMenu()" style="width:100%;text-align:left;padding:8px 12px;border:none;background:none;font-size:13px;cursor:pointer">🔑 Cambiar contraseña</button>
     <button onclick="doLogout()" style="width:100%;text-align:left;padding:8px 12px;border:none;background:none;font-size:13px;color:var(--danger);cursor:pointer">🚪 Cerrar sesión</button>
   </div>
 
@@ -438,6 +442,48 @@ button{cursor:pointer}
     </div>
   </div>
 
+
+  <!-- ── CONFIG PERSONAL ── -->
+  <div class="screen" id="screen-config">
+    <div class="module-header">
+      <button class="btn-back" onclick="goScreen('dashboard')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <span class="module-title">Configuración</span>
+    </div>
+    <div class="module-content">
+      <div class="card">
+        <div class="card-title">🔑 Cambiar contraseña</div>
+        <div class="field">
+          <label>Contraseña actual</label>
+          <div style="position:relative">
+            <input type="password" id="cp-actual" class="finp" placeholder="Contraseña actual" style="padding-right:44px">
+            <button type="button" onclick="togglePassVis('cp-actual',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--text2)">👁</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Nueva contraseña</label>
+          <div style="position:relative">
+            <input type="password" id="cp-nueva" class="finp" placeholder="Mínimo 6 caracteres" style="padding-right:44px">
+            <button type="button" onclick="togglePassVis('cp-nueva',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--text2)">👁</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Repetir nueva contraseña</label>
+          <div style="position:relative">
+            <input type="password" id="cp-repetir" class="finp" placeholder="Repite la nueva contraseña" style="padding-right:44px">
+            <button type="button" onclick="togglePassVis('cp-repetir',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--text2)">👁</button>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="cambiarContrasena()">Guardar nueva contraseña</button>
+      </div>
+
+      <div class="card" id="card-mi-perfil">
+        <div class="card-title">👤 Mi perfil</div>
+        <div id="perfil-info"></div>
+      </div>
+    </div>
+  </div>
 </div><!-- /main-app -->
 
 <!-- ══════════ MODALES ══════════ -->
@@ -577,8 +623,10 @@ function saveFerias(f){localStorage.setItem('ll_ferias',JSON.stringify(f))}
 window.addEventListener('load',function(){
   // Inicializar admin por defecto si no hay usuarios
   var users=getUsers();
-  if(users.length===0){
-    users=[{id:1,name:'Xavi Llamas',username:'admin',password:'llaportex2026',role:'admin',perms:{pedidos:true,clientes:true,ventas:true}}];
+  // Asegurar que siempre existe el usuario admin
+  var hasAdmin=users.find(function(u){return u.username==='admin';});
+  if(!hasAdmin){
+    users.push({id:1,name:'Xavi Llamas',username:'admin',password:'llaportex2026',role:'admin',perms:{pedidos:true,clientes:true,ventas:true}});
     saveUsers(users);
   }
   
@@ -602,6 +650,11 @@ window.addEventListener('load',function(){
 // ══════════════════════════════════════════
 // LOGIN
 // ══════════════════════════════════════════
+function togglePassVis(id,btn){
+  var inp=document.getElementById(id);
+  if(inp.type==='password'){inp.type='text';btn.textContent='🙈';}
+  else{inp.type='password';btn.textContent='👁';}
+}
 function doLogin(){
   var u=document.getElementById('login-user').value.trim();
   var p=document.getElementById('login-pass').value;
@@ -648,6 +701,16 @@ function loginSuccess(){
   loadDashboardCounts();
   loadClientes();
   loadVentasData();
+  
+  // Perfil info
+  setTimeout(function(){
+    var el=document.getElementById('perfil-info');
+    if(el&&currentUser){
+      el.innerHTML='<div style="font-size:14px;font-weight:600">'+currentUser.name+'</div>'+
+        '<div style="font-size:13px;color:var(--text2)">@'+currentUser.username+'</div>'+
+        '<div style="font-size:12px;color:var(--text2);margin-top:4px">Rol: '+(currentUser.role==='admin'?'Administrador':'Agente')+'</div>';
+    }
+  },500);
   
   goScreen('dashboard');
 }
@@ -1211,6 +1274,26 @@ function eliminarUsuario(id){
 // ══════════════════════════════════════════
 // UTILIDADES
 // ══════════════════════════════════════════
+
+function cambiarContrasena(){
+  var actual=document.getElementById('cp-actual').value;
+  var nueva=document.getElementById('cp-nueva').value;
+  var repetir=document.getElementById('cp-repetir').value;
+  if(!actual||!nueva||!repetir){toast('Completa todos los campos','err');return;}
+  var users=getUsers();
+  var u=users.find(function(x){return x.id===currentUser.id});
+  if(!u||u.password!==actual){toast('Contraseña actual incorrecta','err');return;}
+  if(nueva.length<6){toast('Mínimo 6 caracteres','err');return;}
+  if(nueva!==repetir){toast('Las contraseñas no coinciden','err');return;}
+  u.password=nueva;
+  currentUser.password=nueva;
+  saveUsers(users);
+  sessionStorage.setItem('ll_session',JSON.stringify(currentUser));
+  toast('Contraseña cambiada correctamente','ok');
+  ['cp-actual','cp-nueva','cp-repetir'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  goScreen('dashboard');
+}
+
 function openModal(id){var m=document.getElementById(id);if(m)m.classList.add('open')}
 function closeModal(id){var m=document.getElementById(id);if(m)m.classList.remove('open')}
 // Cerrar modal al tocar fondo
