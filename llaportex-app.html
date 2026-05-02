@@ -498,9 +498,7 @@ button{cursor:pointer}
       <div id="iva-resumen" style="display:none">
         <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
           <label style="font-size:13px;font-weight:600;color:var(--text2)">Año:</label>
-          <select class="finp" id="iva-year-res" onchange="renderIVAResumen()" style="width:100px">
-            <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option>
-          </select>
+<select class="finp" id="iva-year-res" onchange="renderIVAResumen()" style="width:100px"></select>
         </div>
         <div class="card">
           <div class="card-ttl">📊 Resumen por trimestre</div>
@@ -817,6 +815,16 @@ function afterLogin() {
 
   loadClientes();
   updateDash();
+  
+  initYearSelects();
+  // Logo click - usar addEventListener para mayor compatibilidad móvil
+  var logo = document.getElementById('hdr-logo');
+  if(logo) {
+    logo.onclick = null;
+    logo.addEventListener('click', function(){ goSc('home'); });
+    logo.addEventListener('touchend', function(e){ e.preventDefault(); goSc('home'); });
+  }
+  
   goSc('home');
 }
 
@@ -954,8 +962,14 @@ function verCL(idx) {
   titleEl.appendChild(span); titleEl.appendChild(closeBtn);
   
   var html = '<div class="card" style="margin-bottom:12px"><div class="card-ttl">Datos empresa</div>';
-  if(c.direccion||c.cp||c.poblacion||c.provincia){
-    html += '<div style="display:flex;gap:8px;margin-bottom:8px"><span>📍</span><div style="font-size:13px">'+(c.direccion||'')+(c.cp?' '+c.cp:'')+' '+(c.poblacion||'')+(c.provincia?' ('+c.provincia+')':'')+'</div></div>';
+  // Dirección completa
+  var dirParts = [];
+  if(c.direccion) dirParts.push(c.direccion);
+  if(c.cp) dirParts.push(c.cp);
+  if(c.poblacion) dirParts.push(c.poblacion);
+  if(c.provincia) dirParts.push('('+c.provincia+')');
+  if(dirParts.length > 0) {
+    html += '<div style="display:flex;gap:8px;margin-bottom:8px"><span>📍</span><div style="font-size:13px">'+dirParts.join(' ')+'</div></div>';
   }
   if(c.telefono) html += '<div style="margin-bottom:6px"><a href="tel:'+c.telefono+'" style="font-size:13px;color:var(--primary);text-decoration:none">📞 '+c.telefono+'</a></div>';
   if(c.telefono2) html += '<div style="margin-bottom:6px"><a href="tel:'+c.telefono2+'" style="font-size:13px;color:var(--primary);text-decoration:none">📞 '+c.telefono2+'</a></div>';
@@ -1422,7 +1436,7 @@ function populateIVAYears(){
   });
 }
 function renderIVATable(tipo){
-  populateIVAYears();
+  // populateIVAYears reemplazada por initYearSelects
   var iva=gIVA();
   var facturas=tipo==='recibida'?iva.recibidas:iva.emitidas;
   var añoSel=document.getElementById(tipo==='recibida'?'iva-año-filter':'iva-año-filter-e');
@@ -1480,46 +1494,57 @@ function delIVABtn(btn){
 }
 
 function renderIVAResumen(){
-  populateIVAYears();
-  var iva=gIVA();
-  var añoSel=document.getElementById('iva-año-filter');
-  var año=añoSel?parseInt(añoSel.value)||new Date().getFullYear():new Date().getFullYear();
+  var iva = gIVA();
+  var yearEl = document.getElementById('iva-year-res');
+  var year = (yearEl && yearEl.value) ? parseInt(yearEl.value) : new Date().getFullYear();
+  if(isNaN(year)) year = new Date().getFullYear();
+  
   // Filtrar por año
-  iva={
-    recibidas:iva.recibidas.filter(function(f){return new Date(f.fecha).getFullYear()===año}),
-    emitidas:iva.emitidas.filter(function(f){return new Date(f.fecha).getFullYear()===año})
-  };
-  var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  var trims=[{n:'1T',m:[0,1,2]},{n:'2T',m:[3,4,5]},{n:'3T',m:[6,7,8]},{n:'4T',m:[9,10,11]}];
-  
-  // Por trimestre
-  var html='';
-  trims.forEach(function(t){
-    var recR=iva.recibidas.filter(function(f){var m=new Date(f.fecha).getMonth();return t.m.indexOf(m)>=0});
-    var emiR=iva.emitidas.filter(function(f){var m=new Date(f.fecha).getMonth();return t.m.indexOf(m)>=0});
-    var ivaRec=recR.reduce(function(s,f){return s+(f.iva21||0)+(f.iva10||0)},0);
-    var ivaEmi=emiR.reduce(function(s,f){return s+(f.iva21||0)+(f.iva10||0)},0);
-    var saldo=ivaEmi-ivaRec;
-    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">';
-    html+='<div><div style="font-weight:700">'+t.n+'</div><div style="font-size:12px;color:var(--text2)">'+meses[t.m[0]]+' - '+meses[t.m[2]]+'</div></div>';
-    html+='<div style="text-align:right"><div style="font-size:12px;color:var(--text2)">IVA soportado: <strong>€'+ivaRec.toFixed(2)+'</strong></div>';
-    html+='<div style="font-size:12px;color:var(--text2)">IVA repercutido: <strong>€'+ivaEmi.toFixed(2)+'</strong></div>';
-    html+='<div style="font-size:14px;font-weight:700;color:'+(saldo>=0?'var(--danger)':'var(--success)')+'">'+( saldo>=0?'A pagar: ':'A cobrar: ')+'€'+Math.abs(saldo).toFixed(2)+'</div></div></div>';
+  var recAnual = iva.recibidas.filter(function(f){
+    try{return new Date(f.fecha).getFullYear()===year;}catch(e){return false;}
   });
-  var trimEl=document.getElementById('iva-trim-content');
-  if(trimEl)trimEl.innerHTML=html||'<div style="color:var(--text2);font-size:13px;padding:12px">Sin datos</div>';
+  var emiAnual = iva.emitidas.filter(function(f){
+    try{return new Date(f.fecha).getFullYear()===year;}catch(e){return false;}
+  });
   
-  // Totales año
-  var totalRec=recAnual.reduce(function(s,f){return s+(f.iva21||0)+(f.iva10||0)},0);
-  var totalEmi=emiAnual.reduce(function(s,f){return s+(f.iva21||0)+(f.iva10||0)},0);
-  var saldoAnual=totalEmi-totalRec;
-  var liqEl=document.getElementById('iva-liquidacion');
+  var meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  var trims = [{n:'1T',m:[0,1,2]},{n:'2T',m:[3,4,5]},{n:'3T',m:[6,7,8]},{n:'4T',m:[9,10,11]}];
+  
+  var html = '';
+  trims.forEach(function(t){
+    var recR = recAnual.filter(function(f){var m=new Date(f.fecha).getMonth();return t.m.indexOf(m)>=0});
+    var emiR = emiAnual.filter(function(f){var m=new Date(f.fecha).getMonth();return t.m.indexOf(m)>=0});
+    var ivaRec = recR.reduce(function(s,f){return s+(f.iva21||0)+(f.iva10||0)},0);
+    var ivaEmi = emiR.reduce(function(s,f){return s+(f.iva21||0)+(f.iva10||0)},0);
+    var saldo = ivaEmi - ivaRec;
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">';
+    html += '<div><div style="font-weight:700">'+t.n+' '+year+'</div>';
+    html += '<div style="font-size:12px;color:var(--text2)">'+meses[t.m[0]]+' - '+meses[t.m[2]]+'</div></div>';
+    html += '<div style="text-align:right">';
+    html += '<div style="font-size:12px;color:var(--text2)">Soportado: <strong>€'+ivaRec.toFixed(2)+'</strong></div>';
+    html += '<div style="font-size:12px;color:var(--text2)">Repercutido: <strong>€'+ivaEmi.toFixed(2)+'</strong></div>';
+    html += '<div style="font-size:14px;font-weight:700;color:'+(saldo>=0?'var(--danger)':'var(--success)')+'">'+
+      (saldo>=0?'A pagar: ':'A cobrar: ')+'€'+Math.abs(saldo).toFixed(2)+'</div>';
+    html += '</div></div>';
+  });
+  
+  var trimEl = document.getElementById('iva-trim-content');
+  if(trimEl) trimEl.innerHTML = html || '<div style="color:var(--text2);font-size:13px;padding:12px;text-align:center">Sin datos para '+year+'</div>';
+  
+  var totalRec = recAnual.reduce(function(s,f){return s+(f.iva21||0)+(f.iva10||0)},0);
+  var totalEmi = emiAnual.reduce(function(s,f){return s+(f.iva21||0)+(f.iva10||0)},0);
+  var saldoAnual = totalEmi - totalRec;
+  
+  var liqEl = document.getElementById('iva-liquidacion');
   if(liqEl){
-    liqEl.innerHTML='<div class="stat-grid" style="margin-bottom:0"><div class="stat-box"><div class="stat-val" style="font-size:16px">€'+totalRec.toFixed(2)+'</div><div class="stat-lbl">IVA soportado (facturas recibidas)</div></div>'+
-    '<div class="stat-box"><div class="stat-val" style="font-size:16px">€'+totalEmi.toFixed(2)+'</div><div class="stat-lbl">IVA repercutido (facturas emitidas)</div></div>'+
-    '<div class="stat-box hl" style="grid-column:span 2"><div class="stat-val">€'+Math.abs(saldoAnual).toFixed(2)+'</div><div class="stat-lbl">'+(saldoAnual>=0?'Total a pagar a Hacienda':'Total a recuperar de Hacienda')+'</div></div></div>';
+    liqEl.innerHTML = '<div class="stat-grid" style="margin-bottom:0">'+
+      '<div class="stat-box"><div class="stat-val" style="font-size:16px">€'+totalRec.toFixed(2)+'</div><div class="stat-lbl">IVA soportado '+year+'</div></div>'+
+      '<div class="stat-box"><div class="stat-val" style="font-size:16px">€'+totalEmi.toFixed(2)+'</div><div class="stat-lbl">IVA repercutido '+year+'</div></div>'+
+      '<div class="stat-box hl" style="grid-column:span 2"><div class="stat-val">€'+Math.abs(saldoAnual).toFixed(2)+'</div>'+
+      '<div class="stat-lbl">'+(saldoAnual>=0?'Total a pagar a Hacienda':'Total a recuperar de Hacienda')+'</div></div></div>';
   }
 }
+
 
 function exportIVAExcel(){toast('Exportación Excel próximamente disponible','info')}
 
@@ -1606,6 +1631,24 @@ document.addEventListener('click', function(e) {
     if(s) s.style.display = 'none';
   }
 });
+
+// ── INICIALIZAR SELECTS AÑO IVA ──
+function initYearSelects() {
+  var now = new Date().getFullYear();
+  var yearIds = ['iva-year-r', 'iva-year-e', 'iva-year-res'];
+  yearIds.forEach(function(id) {
+    var sel = document.getElementById(id);
+    if(!sel) return;
+    sel.innerHTML = '';
+    for(var y = 2000; y <= 2099; y++) {
+      var opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = y;
+      if(y === now) opt.selected = true;
+      sel.appendChild(opt);
+    }
+  });
+}
 
 // ── CAMBIAR CONTRASEÑA ──
 function changePass(){
