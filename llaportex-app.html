@@ -233,7 +233,7 @@ button{cursor:pointer}
 <div id="main-app">
   <!-- Header -->
   <div class="hdr">
-    <img id="hdr-logo" class="hdr-logo" alt="Llaportex" onclick="goSc('home')">
+    <img id="hdr-logo" class="hdr-logo" alt="Llaportex" onclick="goSc('home')" style="cursor:pointer;-webkit-tap-highlight-color:transparent">
     <div class="hdr-right">
       <div class="sync-badge"><div class="sync-dot" id="sync-dot"></div><span id="sync-txt">Local</span></div>
       <button class="usr-btn" id="usr-btn" type="button" onclick="toggleMenu()">XL</button>
@@ -251,9 +251,9 @@ button{cursor:pointer}
     <button class="nav-btn on" id="nav-home" type="button" onclick="goSc('home')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></svg>Inicio
     </button>
-    <button class="nav-btn" id="nav-pedidos" type="button" onclick="openPedidos()">
+    <a class="nav-btn" id="nav-pedidos" href="https://llaportex.github.io/LlaportexPedidos" target="_blank" style="text-decoration:none">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/></svg>Pedidos
-    </button>
+    </a>
     <button class="nav-btn" id="nav-clientes" type="button" onclick="goSc('clientes')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Clientes
     </button>
@@ -270,11 +270,11 @@ button{cursor:pointer}
     <div style="font-size:20px;font-weight:700;margin-bottom:4px" id="dash-greet">Hola</div>
     <div style="font-size:14px;color:var(--text2);margin-bottom:20px" id="dash-date"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-      <div onclick="openPedidos()" style="background:#eff6ff;border-radius:var(--r);padding:20px;border:2px solid #bfdbfe;cursor:pointer;text-align:center">
+      <a href="https://llaportex.github.io/LlaportexPedidos" target="_blank" style="background:#eff6ff;border-radius:var(--r);padding:20px;border:2px solid #bfdbfe;cursor:pointer;text-align:center;text-decoration:none;display:block">
         <div style="font-size:28px;margin-bottom:8px">📋</div>
-        <div style="font-size:14px;font-weight:700">Pedidos</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text)">Pedidos</div>
         <div style="font-size:11px;color:var(--text2);margin-top:4px">QR Pedidos PRO</div>
-      </div>
+      </a>
       <div onclick="goSc('clientes')" style="background:#faf5ff;border-radius:var(--r);padding:20px;border:2px solid #d8b4fe;cursor:pointer;text-align:center">
         <div style="font-size:28px;margin-bottom:8px">👥</div>
         <div style="font-size:14px;font-weight:700">Clientes</div>
@@ -301,7 +301,7 @@ button{cursor:pointer}
       <button class="btn btn-p btn-sm" type="button" onclick="openM('m-new-cl')" style="margin-left:auto">+ Nuevo</button>
     </div>
     <div style="padding:12px 16px 0">
-      <input class="finp" id="cl-q" placeholder="🔍 Buscar empresa..." oninput="renderCL()" style="margin-bottom:8px">
+      <input class="finp" id="cl-q" placeholder="🔍 Buscar empresa..." oninput="renderCL()" onkeyup="renderCL()" style="margin-bottom:8px" autocomplete="off" autocorrect="off" autocapitalize="off">
     </div>
     <div class="chips" id="cl-chips">
       <button class="chip on" type="button" onclick="setCat('',this)">Todos</button>
@@ -421,6 +421,8 @@ button{cursor:pointer}
         </div>
         <input type="file" id="iva-file" accept="image/*,.pdf,.xlsx,.xls" style="display:none" onchange="importarFacturaIVA(event,'recibida')">
         <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+          <select class="finp" id="iva-año-filter" onchange="renderIVATable('recibida');renderIVATable('emitida')" style="width:90px;flex-shrink:0">
+          </select>
           <select class="finp" id="iva-mes-filter" onchange="renderIVATable('recibida')" style="flex:1">
             <option value="">Todos los meses</option>
             <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
@@ -460,6 +462,8 @@ button{cursor:pointer}
         </div>
         <input type="file" id="iva-emit-file" accept="image/*,.pdf,.xlsx,.xls" style="display:none" onchange="importarFacturaIVA(event,'emitida')">
         <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+          <select class="finp" id="iva-año-filter-e" onchange="renderIVATable('recibida');renderIVATable('emitida')" style="width:90px;flex-shrink:0">
+          </select>
           <select class="finp" id="iva-mes-filter-e" onchange="renderIVATable('emitida')" style="flex:1">
             <option value="">Todos los meses</option>
             <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
@@ -492,6 +496,12 @@ button{cursor:pointer}
 
       <!-- RESUMEN TRIMESTRAL -->
       <div id="iva-resumen" style="display:none">
+        <div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">
+          <label style="font-size:13px;font-weight:600;color:var(--text2)">Año:</label>
+          <select class="finp" id="iva-year-res" onchange="renderIVAResumen()" style="width:100px">
+            <option value="2024">2024</option><option value="2025">2025</option><option value="2026" selected>2026</option><option value="2027">2027</option>
+          </select>
+        </div>
         <div class="card">
           <div class="card-ttl">📊 Resumen por trimestre</div>
           <div id="iva-trim-content"></div>
@@ -826,6 +836,7 @@ function goSc(name) {
   var nb = document.getElementById('nav-'+name);
   if(nb) nb.classList.add('on');
   closeMenu();
+  if(name==='clientes') renderCL();
   if(name==='ventas') renderVentas();
   if(name==='admin') renderAdmin();
   if(name==='iva') {renderIVATable('recibida');renderIVATable('emitida');renderIVAResumen();}
@@ -889,15 +900,25 @@ function setCat(cat, btn) {
 }
 
 function renderCL() {
-  var q = (document.getElementById('cl-q')?document.getElementById('cl-q').value:'').toLowerCase();
-  var list = clientes.filter(function(c) {
-    var mc = !clFilter || (c.categoria||'').toLowerCase().indexOf(clFilter.toLowerCase())>=0;
-    var mq = !q || c.empresa.toLowerCase().indexOf(q)>=0 || (c.cif||'').toLowerCase().indexOf(q)>=0 || (c.poblacion||'').toLowerCase().indexOf(q)>=0;
-    return mc && mq;
-  });
   var el = document.getElementById('cl-list');
   if(!el) return;
-  if(!list.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">Sin resultados</div>';return;}
+  // Si no hay clientes cargados, mostrar spinner y cargar
+  if(clientes.length === 0 && supa) {
+    el.innerHTML = '<div class="spinner"></div>';
+    loadClientes();
+    return;
+  }
+  var q = (document.getElementById('cl-q')?document.getElementById('cl-q').value:'').toLowerCase().trim();
+  var list = clientes.filter(function(c) {
+    var cat = (c.categoria||'').toLowerCase();
+    var mc = !clFilter || cat.indexOf(clFilter.toLowerCase())>=0;
+    var emp = (c.empresa||'').toLowerCase();
+    var cif = (c.cif||c.nif||'').toLowerCase();
+    var pob = (c.poblacion||'').toLowerCase();
+    var mq = !q || emp.indexOf(q)>=0 || cif.indexOf(q)>=0 || pob.indexOf(q)>=0;
+    return mc && mq;
+  });
+  if(!list.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--text2)">'+(q||clFilter?'Sin resultados para esta búsqueda':'Sin clientes cargados')+'</div>';return;}
   var html = '';
   list.forEach(function(c, i) {
     var realIdx = clientes.indexOf(c);
@@ -922,56 +943,57 @@ function renderCL() {
 function verCL(idx) {
   var c = clientes[idx];
   if(!c) return;
-  document.getElementById('m-cl-title').textContent = c.empresa;
-  // Add close button separately
+  
+  var titleEl = document.getElementById('m-cl-title');
+  titleEl.innerHTML = '';
+  var span = document.createElement('span');
+  span.textContent = c.empresa;
   var closeBtn = document.createElement('button');
   closeBtn.className = 'modal-x'; closeBtn.type = 'button'; closeBtn.textContent = '✕';
   closeBtn.onclick = function(){closeM('m-cl-detail')};
-  document.getElementById('m-cl-title').appendChild(closeBtn);
+  titleEl.appendChild(span); titleEl.appendChild(closeBtn);
   
-  var html = '<div style="margin-bottom:14px">';
-  if(c.direccion) html += '<div style="font-size:13px;color:var(--text2);margin-bottom:3px">📍 '+c.direccion+(c.cp?' '+c.cp:'')+' '+(c.poblacion||'')+' '+(c.provincia||'')+'</div>';
-  if(c.telefono) html += '<div style="font-size:13px;color:var(--text2);margin-bottom:3px">📞 '+c.telefono+'</div>';
-  if(c.email) html += '<div style="font-size:13px;color:var(--primary);margin-bottom:3px">✉️ '+c.email+'</div>';
-  if(c.cif||c.nif) html += '<div style="font-size:13px;color:var(--text2)">CIF: '+(c.cif||c.nif)+'</div>';
+  var html = '<div class="card" style="margin-bottom:12px"><div class="card-ttl">Datos empresa</div>';
+  if(c.direccion||c.cp||c.poblacion||c.provincia){
+    html += '<div style="display:flex;gap:8px;margin-bottom:8px"><span>📍</span><div style="font-size:13px">'+(c.direccion||'')+(c.cp?' '+c.cp:'')+' '+(c.poblacion||'')+(c.provincia?' ('+c.provincia+')':'')+'</div></div>';
+  }
+  if(c.telefono) html += '<div style="margin-bottom:6px"><a href="tel:'+c.telefono+'" style="font-size:13px;color:var(--primary);text-decoration:none">📞 '+c.telefono+'</a></div>';
+  if(c.telefono2) html += '<div style="margin-bottom:6px"><a href="tel:'+c.telefono2+'" style="font-size:13px;color:var(--primary);text-decoration:none">📞 '+c.telefono2+'</a></div>';
+  if(c.email) html += '<div style="margin-bottom:6px"><a href="mailto:'+c.email+'" style="font-size:13px;color:var(--primary);text-decoration:none">✉️ '+c.email+'</a></div>';
+  if(c.cif||c.nif) html += '<div style="font-size:13px;color:var(--text2);margin-bottom:4px">CIF/NIF: '+(c.cif||c.nif)+'</div>';
+  if(c.categoria) html += '<div style="font-size:13px;color:var(--text2)">Sector: '+c.categoria+'</div>';
   html += '</div>';
 
-  // Ventas del cliente
-  var vs = gV();
-  var totalFact=0, totalCom=0;
+  var vs = gV(); var totalFact=0,totalCom=0;
   vs.forEach(function(v){
     (v.lineas||[]).forEach(function(l){
-      if(l.cliente&&l.cliente.toLowerCase().indexOf(c.empresa.toLowerCase())>=0){
-        totalFact+=l.importeFactura||0;totalCom+=l.comision||0;
-      }
+      if(l.cliente&&l.cliente.toLowerCase().indexOf(c.empresa.toLowerCase())>=0){totalFact+=l.importeFactura||0;totalCom+=l.comision||0;}
     });
   });
   if(totalFact>0){
-    html+='<div class="stat-grid" style="margin-bottom:14px">';
-    html+='<div class="stat-box"><div class="stat-val" style="font-size:16px">€'+totalFact.toFixed(2)+'</div><div class="stat-lbl">Compras totales</div></div>';
-    html+='<div class="stat-box hl"><div class="stat-val" style="font-size:16px">€'+totalCom.toFixed(2)+'</div><div class="stat-lbl">Mis comisiones</div></div>';
-    html+='</div>';
+    html += '<div class="stat-grid" style="margin-bottom:12px">';
+    html += '<div class="stat-box"><div class="stat-val" style="font-size:16px">€'+totalFact.toFixed(2)+'</div><div class="stat-lbl">Compras totales</div></div>';
+    html += '<div class="stat-box hl"><div class="stat-val" style="font-size:16px">€'+totalCom.toFixed(2)+'</div><div class="stat-lbl">Mis comisiones</div></div>';
+    html += '</div>';
   }
 
-  // Contactos
   var contactos = c.contactos||[];
   if(contactos.length>0){
-    var deptos = {};
-    contactos.forEach(function(ct){
-      var d=ct.departamento||'Otros';
-      if(!deptos[d]) deptos[d]=[];
-      deptos[d].push(ct);
-    });
-    html+='<div style="font-size:13px;font-weight:700;margin-bottom:8px">Contactos</div>';
+    html += '<div class="card"><div class="card-ttl">Contactos</div>';
+    var deptos={};
+    contactos.forEach(function(ct){var d=ct.departamento||'Otros';if(!deptos[d])deptos[d]=[];deptos[d].push(ct);});
     Object.keys(deptos).forEach(function(d){
-      html+='<div class="contact-dpto">'+d+'</div>';
+      html += '<div class="contact-dpto">'+d+'</div>';
       deptos[d].forEach(function(ct){
-        html+='<div class="contact-card"><div class="contact-name">'+(ct.nombre||'')+'</div>';
-        if(ct.email) html+='<div class="contact-info">✉️ '+ct.email+'</div>';
-        if(ct.telefono) html+='<div class="contact-info">📞 '+ct.telefono+'</div>';
-        html+='</div>';
+        html += '<div class="contact-card">';
+        if(ct.nombre) html += '<div class="contact-name">'+ct.nombre+'</div>';
+        if(ct.cargo) html += '<div style="font-size:11px;color:var(--text2);margin-bottom:2px">'+ct.cargo+'</div>';
+        if(ct.email) html += '<div class="contact-info"><a href="mailto:'+ct.email+'" style="color:var(--primary);text-decoration:none">✉️ '+ct.email+'</a></div>';
+        if(ct.telefono) html += '<div class="contact-info"><a href="tel:'+ct.telefono+'" style="color:var(--primary);text-decoration:none">📞 '+ct.telefono+'</a></div>';
+        html += '</div>';
       });
     });
+    html += '</div>';
   }
 
   document.getElementById('m-cl-body').innerHTML = html;
@@ -1385,12 +1407,34 @@ function guardarFacturaIVA(tipo,factura){
   renderIVAResumen();updateDash();
 }
 
+function populateIVAYears(){
+  var iva=gIVA();var years={};
+  iva.recibidas.concat(iva.emitidas).forEach(function(f){
+    var y=new Date(f.fecha).getFullYear();if(y>2000)years[y]=1;
+  });
+  var currentYear=new Date().getFullYear();years[currentYear]=1;
+  var sortedYears=Object.keys(years).sort().reverse();
+  ['iva-año-filter','iva-año-filter-e'].forEach(function(id){
+    var sel=document.getElementById(id);if(!sel)return;
+    var cur=sel.value||String(currentYear);
+    sel.innerHTML='';
+    sortedYears.forEach(function(y){sel.innerHTML+='<option value="'+y+'"'+(cur===y?' selected':'')+'>'+y+'</option>';});
+  });
+}
 function renderIVATable(tipo){
+  populateIVAYears();
   var iva=gIVA();
   var facturas=tipo==='recibida'?iva.recibidas:iva.emitidas;
-  var mesFilter=tipo==='recibida'?document.getElementById('iva-mes-filter'):document.getElementById('iva-mes-filter-e');
+  var añoSel=document.getElementById(tipo==='recibida'?'iva-año-filter':'iva-año-filter-e');
+  var mesFilter=document.getElementById(tipo==='recibida'?'iva-mes-filter':'iva-mes-filter-e');
+  var año=añoSel?parseInt(añoSel.value)||0:0;
   var mes=mesFilter?parseInt(mesFilter.value)||0:0;
-  var filtered=mes?facturas.filter(function(f){return new Date(f.fecha).getMonth()+1===mes}):facturas;
+  var filtered=facturas.filter(function(f){
+    var d=new Date(f.fecha);
+    var matchY=!año||d.getFullYear()===año;
+    var matchM=!mes||d.getMonth()+1===mes;
+    return matchY&&matchM;
+  });
   var suffix=tipo==='recibida'?'r':'e';
   var tbody=document.getElementById('iva-body-'+tipo+'s');
   var emptyEl=document.getElementById('iva-empty-'+tipo+'s');
@@ -1436,7 +1480,15 @@ function delIVABtn(btn){
 }
 
 function renderIVAResumen(){
+  populateIVAYears();
   var iva=gIVA();
+  var añoSel=document.getElementById('iva-año-filter');
+  var año=añoSel?parseInt(añoSel.value)||new Date().getFullYear():new Date().getFullYear();
+  // Filtrar por año
+  iva={
+    recibidas:iva.recibidas.filter(function(f){return new Date(f.fecha).getFullYear()===año}),
+    emitidas:iva.emitidas.filter(function(f){return new Date(f.fecha).getFullYear()===año})
+  };
   var meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   var trims=[{n:'1T',m:[0,1,2]},{n:'2T',m:[3,4,5]},{n:'3T',m:[6,7,8]},{n:'4T',m:[9,10,11]}];
   
@@ -1458,8 +1510,8 @@ function renderIVAResumen(){
   if(trimEl)trimEl.innerHTML=html||'<div style="color:var(--text2);font-size:13px;padding:12px">Sin datos</div>';
   
   // Totales año
-  var totalRec=iva.recibidas.reduce(function(s,f){return s+(f.iva21||0)+(f.iva10||0)},0);
-  var totalEmi=iva.emitidas.reduce(function(s,f){return s+(f.iva21||0)+(f.iva10||0)},0);
+  var totalRec=recAnual.reduce(function(s,f){return s+(f.iva21||0)+(f.iva10||0)},0);
+  var totalEmi=emiAnual.reduce(function(s,f){return s+(f.iva21||0)+(f.iva10||0)},0);
   var saldoAnual=totalEmi-totalRec;
   var liqEl=document.getElementById('iva-liquidacion');
   if(liqEl){
@@ -1518,6 +1570,42 @@ function saveNewUsr(){
   sU(users);closeM('m-new-usr');toast('Usuario creado','ok');renderAdmin();
   ['nu-name','nu-usr','nu-pass'].forEach(function(id){var el=document.getElementById(id);if(el)el.value=''});
 }
+
+function renderSugs() {
+  var q = (document.getElementById('cl-q').value||'').trim();
+  var sugs = document.getElementById('cl-sugs');
+  if(!sugs) return;
+  if(!q || q.length < 2) { sugs.style.display = 'none'; return; }
+  var matches = clientes.filter(function(c) {
+    return c.empresa.toLowerCase().indexOf(q.toLowerCase()) >= 0;
+  }).slice(0, 6);
+  if(!matches.length) { sugs.style.display = 'none'; return; }
+  var sugHtml = '';
+  matches.forEach(function(c) {
+    var i = clientes.indexOf(c);
+    sugHtml += '<div data-idx="'+i+'" onclick="selectSugBtn(this)" style="padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:14px">';
+    sugHtml += c.empresa + '<span style="font-size:11px;color:var(--text2);margin-left:8px">'+(c.poblacion||'')+'</span></div>';
+  });
+  sugs.innerHTML = sugHtml;
+  sugs.style.display = 'block';
+}
+
+function selectSug(idx) {
+  var sugs = document.getElementById('cl-sugs');
+  if(sugs) sugs.style.display = 'none';
+  document.getElementById('cl-q').value = '';
+  verCL(idx);
+}
+function selectSugBtn(el) {
+  var idx = parseInt(el.getAttribute('data-idx'));
+  selectSug(idx);
+}
+document.addEventListener('click', function(e) {
+  if(!e.target.closest('#cl-q') && !e.target.closest('#cl-sugs')) {
+    var s = document.getElementById('cl-sugs');
+    if(s) s.style.display = 'none';
+  }
+});
 
 // ── CAMBIAR CONTRASEÑA ──
 function changePass(){
