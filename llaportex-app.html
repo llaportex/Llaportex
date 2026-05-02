@@ -193,14 +193,14 @@ button{cursor:pointer}
     <div class="login-title">Llaportex APP</div>
     <div class="login-sub">Accede con tus credenciales</div>
     <div class="field"><label class="lbl">Usuario</label><input class="inp" id="f-user" placeholder="usuario" autocapitalize="none" autocomplete="username"></div>
-    <div class="field"><label class="lbl">Contraseña</label><div class="pass-wrap"><input class="inp" type="password" id="f-pass" placeholder="••••••••" autocomplete="current-password"><button class="eye-btn" type="button" onclick="toggleEye()">👁</button></div></div>
+    <div class="field"><label class="lbl">Contraseña</label><div class="pass-wrap"><input class="inp" type="password" id="f-pass" placeholder="Contraseña" autocomplete="current-password"><button class="eye-btn" type="button" onclick="toggleEye()">👁</button></div></div>
     <button class="btn-login" type="button" onclick="doLogin()">Entrar</button>
     <div class="login-err" id="login-err"></div>
   </div>
 </div>
 <div id="main-app">
 <div class="hdr">
-  <img id="hdr-logo" class="hdr-logo" alt="Llaportex">
+  <img id="hdr-logo" class="hdr-logo" alt="Llaportex" onclick="goSc('home')" style="cursor:pointer">
   <div class="hdr-right">
     <div class="sync-badge"><div class="sync-dot" id="sync-dot"></div><span id="sync-txt">Local</span></div>
     <button class="usr-btn" id="usr-btn" type="button" onclick="toggleMenu()">XL</button>
@@ -217,7 +217,7 @@ button{cursor:pointer}
   <button class="nav-btn on" id="nav-home" type="button" onclick="goSc('home')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></svg>Inicio
   </button>
-  <button class="nav-btn" id="nav-pedidos" type="button" onclick="goSc('pedidos')">
+  <button class="nav-btn" id="nav-pedidos" type="button" onclick="openPedidos()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/></svg>Pedidos
   </button>
   <button class="nav-btn" id="nav-clientes" type="button" onclick="goSc('clientes')">
@@ -231,7 +231,7 @@ button{cursor:pointer}
   <div style="font-size:20px;font-weight:700;margin-bottom:4px" id="dash-greet">Hola</div>
   <div style="font-size:14px;color:var(--text2);margin-bottom:20px" id="dash-date"></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-    <div onclick="goSc('pedidos')" style="background:var(--surface);border-radius:var(--r);padding:20px;border:2px solid #bfdbfe;background:#eff6ff;cursor:pointer;text-align:center">
+    <div onclick="openPedidos()" style="background:var(--surface);border-radius:var(--r);padding:20px;border:2px solid #bfdbfe;background:#eff6ff;cursor:pointer;text-align:center">
       <div style="font-size:30px;margin-bottom:8px">📋</div>
       <div style="font-size:15px;font-weight:700">Pedidos</div>
       <div style="font-size:12px;color:var(--text2);margin-top:4px" id="d-pedidos">—</div>
@@ -248,18 +248,7 @@ button{cursor:pointer}
     </div>
   </div>
 </div>
-<div class="sc" id="sc-pedidos">
-  <div class="mod-hdr">
-    <button class="back-btn" type="button" onclick="goSc('home')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
-    <span class="mod-title">Pedidos</span>
-  </div>
-  <div class="pg" style="text-align:center;padding:40px">
-    <div style="font-size:40px;margin-bottom:16px">📋</div>
-    <div style="font-size:16px;font-weight:600;margin-bottom:8px">Módulo Pedidos</div>
-    <div style="font-size:14px;color:var(--text2);margin-bottom:20px">El programa QR Pedidos PRO está disponible en su propia URL</div>
-    <a href="https://llaportex.github.io/LlaportexPedidos" target="_blank" style="display:inline-block;padding:12px 24px;background:var(--primary);color:#fff;border-radius:var(--r);font-weight:700;text-decoration:none">Abrir QR Pedidos PRO →</a>
-  </div>
-</div>
+<div class="sc" id="sc-pedidos" style="display:none"></div>
 <div class="sc" id="sc-clientes">
   <div class="mod-hdr">
     <button class="back-btn" type="button" onclick="goSc('home')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
@@ -311,10 +300,23 @@ button{cursor:pointer}
       <div class="upload-z" onclick="document.getElementById('ext-file').click()">
         <div class="upload-icon">📄</div>
         <div class="upload-ttl">Importar extracto</div>
-        <div class="upload-sub">PDF o Excel · La IA detecta los datos automáticamente</div>
+        <div class="upload-sub">PDF o Excel · La IA detecta fabricante y datos automáticamente</div>
       </div>
       <input type="file" id="ext-file" accept=".pdf,.xlsx,.xls,.csv" style="display:none" onchange="importExt(event)">
-      <div class="card" style="margin-top:14px"><div class="card-ttl">Extractos guardados</div><div id="ext-list"></div></div>
+      <!-- Selector de fabricante para filtrar -->
+      <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+        <select class="finp" id="ext-fab-filter" onchange="renderExtList()" style="flex:1">
+          <option value="">Todos los fabricantes</option>
+        </select>
+        <button class="btn btn-s btn-sm" type="button" onclick="renderExtList()">↺</button>
+      </div>
+      <div class="card" style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="card-ttl" style="margin-bottom:0">Extractos guardados</div>
+          <div id="ext-fab-total" style="font-size:13px;font-weight:700;color:var(--primary)"></div>
+        </div>
+        <div id="ext-list"></div>
+      </div>
     </div>
     <div id="vt-ferias" style="display:none">
       <div class="ftabs">
@@ -365,11 +367,22 @@ button{cursor:pointer}
 <div class="modal-bg" id="m-new-cl">
   <div class="modal">
     <div class="modal-ttl">Nuevo cliente <button class="modal-x" type="button" onclick="closeM('m-new-cl')">✕</button></div>
+    <!-- Foto tarjeta de visita -->
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="btn btn-s" style="flex:1;font-size:13px" type="button" onclick="document.getElementById('nc-card-photo').click()">📷 Foto tarjeta</button>
+      <input type="file" id="nc-card-photo" accept="image/*" capture="environment" style="display:none" onchange="scanBusinessCard(event)">
+      <div id="nc-scan-status" style="flex:1;font-size:12px;color:var(--text2);display:flex;align-items:center;padding:4px">Sube una foto para autorellenar</div>
+    </div>
     <div class="field"><label class="lbl">Empresa *</label><input class="finp" id="nc-emp" placeholder="Nombre empresa"></div>
     <div class="field"><label class="lbl">CIF/NIF</label><input class="finp" id="nc-cif" placeholder="B12345678"></div>
+    <div class="field"><label class="lbl">Persona de contacto</label><input class="finp" id="nc-ctc" placeholder="Nombre y apellidos"></div>
+    <div class="field"><label class="lbl">Email</label><input class="finp" id="nc-email" type="email" placeholder="email@empresa.com"></div>
+    <div class="brow">
+      <div class="field" style="flex:1"><label class="lbl">Teléfono 1</label><input class="finp" id="nc-tel1" type="tel" placeholder="93..."></div>
+      <div class="field" style="flex:1"><label class="lbl">Teléfono 2</label><input class="finp" id="nc-tel2" type="tel" placeholder="6..."></div>
+    </div>
     <div class="field"><label class="lbl">Dirección</label><input class="finp" id="nc-dir" placeholder="Calle, número"></div>
     <div class="field"><label class="lbl">Población</label><input class="finp" id="nc-pob" placeholder="Barcelona"></div>
-    <div class="field"><label class="lbl">Teléfono</label><input class="finp" id="nc-tel" type="tel"></div>
     <div class="field"><label class="lbl">Categoría</label><select class="finp" id="nc-cat"><option value="">— Sin categoría —</option><option>Baño</option><option>Íntimo</option><option>Exterior</option><option>Infantil</option><option>Sport</option></select></div>
     <div class="brow" style="margin-top:14px">
       <button class="btn btn-s" style="flex:1" type="button" onclick="closeM('m-new-cl')">Cancelar</button>
@@ -678,18 +691,29 @@ function verCL(idx) {
 async function saveNewCL() {
   var emp = (document.getElementById('nc-emp').value || '').trim();
   if (!emp) { toast('Nombre obligatorio', 'err'); return; }
+  var ctc = (document.getElementById('nc-ctc').value || '').trim();
+  var email = (document.getElementById('nc-email').value || '').trim();
+  var tel1 = (document.getElementById('nc-tel1').value || '').trim();
+  var tel2 = (document.getElementById('nc-tel2').value || '').trim();
+  var contactos = [];
+  if (ctc || email || tel1) {
+    contactos.push({ nombre: ctc, email: email, telefono: tel1, departamento: 'Compras', cargo: '' });
+  }
   var obj = {
     empresa: emp,
     cif: document.getElementById('nc-cif').value.trim(),
     direccion: document.getElementById('nc-dir').value.trim(),
     poblacion: document.getElementById('nc-pob').value.trim(),
-    telefono: document.getElementById('nc-tel').value.trim(),
+    telefono: tel1,
+    telefono2: tel2,
+    email: email,
     categoria: document.getElementById('nc-cat').value,
-    estado: 'activo', contactos: []
+    estado: 'activo',
+    contactos: contactos
   };
   if (supa) {
     var r = await supa.from('clientes').insert(obj).select().single();
-    if (r.data) { clientes.push(r.data); toast('Guardado', 'ok'); }
+    if (r.data) { clientes.push(r.data); toast('Cliente guardado', 'ok'); }
     else { toast('Error al guardar', 'err'); return; }
   } else {
     obj.id = Date.now(); clientes.push(obj); toast('Guardado (local)', 'ok');
@@ -697,8 +721,10 @@ async function saveNewCL() {
   closeM('m-new-cl');
   renderCL();
   updateDashCounts();
-  ['nc-emp','nc-cif','nc-dir','nc-pob','nc-tel'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
+  ['nc-emp','nc-cif','nc-ctc','nc-email','nc-tel1','nc-tel2','nc-dir','nc-pob'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById('nc-cat').value = '';
+  document.getElementById('nc-scan-status').textContent = 'Sube una foto para autorellenar';
+  document.getElementById('nc-scan-status').style.color = 'var(--text2)';
 }
 
 // ── VENTAS ──
@@ -706,7 +732,7 @@ function updateDashCounts() {
   document.getElementById('d-clientes').textContent = clientes.length + ' empresas';
   var vs = gV();
   var tc = vs.reduce(function(s, v) { return s + (v.totalCom || 0); }, 0);
-  document.getElementById('d-ventas').textContent = '€' + tc.toFixed(2) + ' comisiones';
+  document.getElementById('d-ventas').textContent = vs.length + ' extractos importados';
   document.getElementById('d-pedidos').textContent = 'Abrir programa';
 }
 
@@ -868,16 +894,56 @@ function renderExtList() {
   var vs = gV();
   var el = document.getElementById('ext-list');
   if (!el) return;
-  if (!vs.length) { el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:12px">Sin extractos importados.</div>'; return; }
+
+  // Actualizar selector de fabricantes
+  var fabSel = document.getElementById('ext-fab-filter');
+  if (fabSel) {
+    var fabs = {};
+    vs.forEach(function(v) { fabs[v.fabricante] = 1; });
+    var curVal = fabSel.value;
+    fabSel.innerHTML = '<option value="">Todos los fabricantes</option>';
+    Object.keys(fabs).sort().forEach(function(f) {
+      fabSel.innerHTML += '<option value="' + f + '"' + (curVal === f ? ' selected' : '') + '>' + f + '</option>';
+    });
+  }
+
+  // Filtrar
+  var fabFilter = fabSel ? fabSel.value : '';
+  var filtered = fabFilter ? vs.filter(function(v) { return v.fabricante === fabFilter; }) : vs;
+
+  // Totales del filtro
+  var totalFact = filtered.reduce(function(s, v) { return s + (v.totalFact || 0); }, 0);
+  var totalCom = filtered.reduce(function(s, v) { return s + (v.totalCom || 0); }, 0);
+  var totEl = document.getElementById('ext-fab-total');
+  if (totEl) totEl.textContent = filtered.length ? 'Total: €' + totalCom.toFixed(2) : '';
+
+  if (!filtered.length) {
+    el.innerHTML = '<div style="color:var(--text2);font-size:13px;padding:12px">Sin extractos' + (fabFilter ? ' de ' + fabFilter : '') + '.</div>';
+    return;
+  }
+
   var html = '';
-  vs.forEach(function(v, i) {
+  filtered.forEach(function(v) {
+    var origIdx = vs.indexOf(v);
     html += '<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">';
-    html += '<div style="flex:1"><div style="font-size:14px;font-weight:700">' + v.fabricante + '</div><div style="font-size:12px;color:var(--text2)">' + v.fecha + ' · ' + (v.lineas || []).length + ' líneas</div></div>';
-    html += '<div style="text-align:right"><div style="font-size:14px;font-weight:700;color:var(--success)">€' + (v.totalCom || 0).toFixed(2) + '</div><div style="font-size:11px;color:var(--text2)">de €' + (v.totalFact || 0).toFixed(2) + '</div></div>';
-    html += '<button type="button" onclick="delExt(' + i + ')" style="color:var(--danger);border:none;background:none;font-size:18px;padding:4px">✕</button>';
+    html += '<div style="flex:1">';
+    html += '<div style="font-size:14px;font-weight:700">' + v.fabricante + '</div>';
+    html += '<div style="font-size:12px;color:var(--text2)">' + v.fecha + ' · ' + (v.lineas || []).length + ' líneas</div>';
+    html += '</div>';
+    html += '<div style="text-align:right">';
+    html += '<div style="font-size:14px;font-weight:700;color:var(--success)">€' + (v.totalCom || 0).toFixed(2) + '</div>';
+    html += '<div style="font-size:11px;color:var(--text2)">de €' + (v.totalFact || 0).toFixed(2) + '</div>';
+    html += '</div>';
+    html += '<button type="button" data-idx="' + origIdx + '" onclick="delExtBtn(this)" style="color:var(--danger);border:none;background:none;font-size:18px;padding:4px">✕</button>';
     html += '</div>';
   });
   el.innerHTML = html;
+}
+function delExtBtn(btn) {
+  var i = parseInt(btn.getAttribute('data-idx'));
+  var vs = gV(); vs.splice(i, 1); sV(vs);
+  renderExtList(); renderStats(); updateDashCounts();
+  toast('Eliminado', 'ok');
 }
 
 function delExt(i) {
@@ -1000,6 +1066,61 @@ function saveNewUsr() {
   ['nu-name','nu-usr','nu-pass'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
 }
 
+
+// ── ABRIR PEDIDOS ──
+function openPedidos() {
+  window.open('https://llaportex.github.io/LlaportexPedidos', '_blank');
+}
+
+// ── ESCANEAR TARJETA DE VISITA ──
+async function scanBusinessCard(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('nc-card-photo').value = '';
+  var st = document.getElementById('nc-scan-status');
+  st.textContent = '⏳ Analizando tarjeta...';
+  st.style.color = 'var(--primary)';
+
+  var reader = new FileReader();
+  reader.onload = async function(ev) {
+    var b64 = ev.target.result.split(',')[1];
+    var prompt = 'Analiza esta tarjeta de visita y extrae los datos. Responde SOLO con JSON: {"empresa":"","contacto":"","email":"","tel1":"","tel2":"","direccion":"","poblacion":"","cif":""}';
+    try {
+      var resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 500,
+          messages: [{ role: 'user', content: [
+            { type: 'image', source: { type: 'base64', media_type: file.type || 'image/jpeg', data: b64 } },
+            { type: 'text', text: prompt }
+          ]}]
+        })
+      });
+      var data = await resp.json();
+      var txt = (data.content[0].text || '').replace(/```json|```/g, '').trim();
+      var parsed = JSON.parse(txt);
+      // Rellenar campos
+      if (parsed.empresa) document.getElementById('nc-emp').value = parsed.empresa;
+      if (parsed.contacto) document.getElementById('nc-ctc').value = parsed.contacto;
+      if (parsed.email) document.getElementById('nc-email').value = parsed.email;
+      if (parsed.tel1) document.getElementById('nc-tel1').value = parsed.tel1;
+      if (parsed.tel2) document.getElementById('nc-tel2').value = parsed.tel2;
+      if (parsed.direccion) document.getElementById('nc-dir').value = parsed.direccion;
+      if (parsed.poblacion) document.getElementById('nc-pob').value = parsed.poblacion;
+      if (parsed.cif) document.getElementById('nc-cif').value = parsed.cif;
+      st.textContent = '✅ Datos detectados. Revisa y ajusta si es necesario.';
+      st.style.color = 'var(--success)';
+    } catch(err) {
+      st.textContent = '❌ Error al analizar. Introduce los datos manualmente.';
+      st.style.color = 'var(--danger)';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── GUARDAR NUEVO CLIENTE (actualizado) ──
 
 // ── CAMBIAR CONTRASEÑA ──
 function changePass() {
