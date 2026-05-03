@@ -661,8 +661,8 @@ async function loadClientes(){
 function renderCL(){
   var q=(g('clq').value||'').toLowerCase();
   var list=clientes.filter(function(c){
-    var mc=!clCat||(c.categoria||'').toLowerCase().indexOf(clCat.toLowerCase())>=0;
-    var mq=!q||c.empresa.toLowerCase().indexOf(q)>=0||(c.cif||'').toLowerCase().indexOf(q)>=0||(c.poblacion||'').toLowerCase().indexOf(q)>=0;
+    var mc=!clCat||(c.cat||c.categoria||'').toLowerCase().indexOf(clCat.toLowerCase())>=0;
+    var mq=!q||c.empresa.toLowerCase().indexOf(q)>=0||(c.cif||'').toLowerCase().indexOf(q)>=0||(c.pob||'').toLowerCase().indexOf(q)>=0;
     return mc&&mq;
   });
   var el=g('cl-list');if(!el)return;
@@ -670,7 +670,7 @@ function renderCL(){
   var html='';
   list.forEach(function(c){
     var i=clientes.indexOf(c);
-    var cats=(c.categoria||'').split('/');
+    var cats=(c.cat||c.categoria||'').split('/');
     var badges='';
     cats.forEach(function(cat){
       cat=cat.trim();if(!cat)return;
@@ -679,7 +679,7 @@ function renderCL(){
     });
     html+='<div class="cr" data-idx="'+i+'"><div class="ca">'+c.empresa.substring(0,2).toUpperCase()+'</div>';
     html+='<div style="flex:1;min-width:0"><div class="cn">'+c.empresa+'</div>';
-    html+='<div class="cs">'+(c.poblacion||'')+(c.telefono?' · '+c.telefono:'')+'</div>';
+    html+='<div class="cs">'+(c.pob||'')+(c.tlf?' · '+c.tlf:'')+'</div>';
     if(badges)html+='<div style="margin-top:4px">'+badges+'</div>';
     html+='</div>';
     if(c.estado==='activo')html+='<div class="dok"></div>';
@@ -716,8 +716,6 @@ function renderSugs(){
 
 function verCL(idx){
   var c=clientes[idx];if(!c)return;
-  // Debug: log all fields
-  console.log('Cliente datos:', JSON.stringify(c));
   
   // Title
   var tEl=g('mtt-cl');
@@ -727,38 +725,21 @@ function verCL(idx){
   xb.onclick=function(){closeM('m-cldetail')};
   tEl.appendChild(sp);tEl.appendChild(xb);
 
+  // Campos REALES de Supabase: dir, cp, pob, prov, tlf, mov, email, cif, cat, ccaa, contacto
   var html='<div class="card" style="margin-bottom:12px"><div class="ctl">Datos empresa</div>';
-  // Dirección - probar varios nombres de campo posibles
-  var dir=[];
-  var addr=c.direccion||c.address||c.dir||'';
-  var cp=c.cp||c.codigo_postal||c.postal||'';
-  var pob=c.poblacion||c.ciudad||c.city||'';
-  var prov=c.provincia||c.province||'';
-  if(addr)dir.push(addr);
-  if(cp)dir.push(cp);
-  if(pob)dir.push(pob);
-  if(prov)dir.push('('+prov+')');
-  if(dir.length)html+='<div style="display:flex;gap:8px;margin-bottom:8px"><span>📍</span><div style="font-size:13px">'+dir.join(' ')+'</div></div>';
-  // Teléfonos - probar variantes
-  var tel=c.telefono||c.tel||c.phone||c.telefon||'';
-  var tel2=c.telefono2||c.tel2||c.movil||'';
-  if(tel)html+='<div style="margin-bottom:6px"><a href="tel:'+tel+'" style="font-size:13px;color:var(--pr);text-decoration:none">📞 '+tel+'</a></div>';
-  if(tel2)html+='<div style="margin-bottom:6px"><a href="tel:'+tel2+'" style="font-size:13px;color:var(--pr);text-decoration:none">📞 '+tel2+'</a></div>';
-  // Email
-  var mail=c.email||c.correo||'';
-  if(mail)html+='<div style="margin-bottom:6px"><a href="mailto:'+mail+'" style="font-size:13px;color:var(--pr);text-decoration:none">✉️ '+mail+'</a></div>';
-  // CIF/NIF
-  var cif=c.cif||c.nif||c.cif_nif||'';
-  if(cif)html+='<div style="font-size:13px;color:var(--tx2);margin-bottom:4px">CIF/NIF: '+cif+'</div>';
-  if(c.com_autonoma)html+='<div style="font-size:13px;color:var(--tx2);margin-bottom:4px">C.A.: '+c.com_autonoma+'</div>';
-  var cat=c.categoria||c.sector||c.mercado||'';
-  if(cat)html+='<div style="font-size:13px;color:var(--tx2)">Sector: '+cat+'</div>';
-  if(c.estado)html+='<div style="font-size:13px;color:'+(c.estado==='activo'?'var(--ok)':'var(--tx2)')+';margin-top:4px">Estado: '+c.estado+'</div>';
-  // Mostrar todos los campos disponibles si hay pocos datos
-  var hasData=addr||tel||mail||cif;
-  if(!hasData){
-    html+='<div style="font-size:12px;color:var(--tx2);padding:8px;background:var(--s2);border-radius:var(--rs);margin-top:8px">Campos disponibles: '+Object.keys(c).filter(function(k){return c[k]&&k!=='contactos'&&k!=='id'}).join(', ')+'</div>';
-  }
+  var dirParts=[];
+  if(c.dir)dirParts.push(c.dir);
+  if(c.cp)dirParts.push(c.cp);
+  if(c.pob)dirParts.push(c.pob);
+  if(c.prov)dirParts.push('('+c.prov+')');
+  if(dirParts.length)html+='<div style="display:flex;gap:8px;margin-bottom:8px"><span>📍</span><div style="font-size:13px">'+dirParts.join(' ')+'</div></div>';
+  if(c.tlf)html+='<div style="margin-bottom:6px"><a href="tel:'+c.tlf+'" style="font-size:13px;color:var(--pr);text-decoration:none">📞 '+c.tlf+'</a></div>';
+  if(c.mov)html+='<div style="margin-bottom:6px"><a href="tel:'+c.mov+'" style="font-size:13px;color:var(--pr);text-decoration:none">📱 '+c.mov+'</a></div>';
+  if(c.email)html+='<div style="margin-bottom:6px"><a href="mailto:'+c.email+'" style="font-size:13px;color:var(--pr);text-decoration:none">✉️ '+c.email+'</a></div>';
+  if(c.cif)html+='<div style="font-size:13px;color:var(--tx2);margin-bottom:4px">CIF: '+c.cif+'</div>';
+  if(c.ccaa)html+='<div style="font-size:13px;color:var(--tx2);margin-bottom:4px">C.A.: '+c.ccaa+'</div>';
+  if(c.cat)html+='<div style="font-size:13px;color:var(--tx2);margin-bottom:2px">Sector: '+c.cat+'</div>';
+  if(c.estado)html+='<div style="font-size:13px;color:'+(c.estado==='activo'?'var(--ok)':'var(--tx2)')+';margin-top:4px">● '+c.estado+'</div>';
   html+='</div>';
 
   // Ventas stats
@@ -767,7 +748,13 @@ function verCL(idx){
   if(tf>0)html+='<div class="sg" style="margin-bottom:12px"><div class="sb2"><div class="sv" style="font-size:16px">'+fmtEur(tf)+'</div><div class="sl">Compras totales</div></div><div class="sb2 hl"><div class="sv" style="font-size:16px">'+fmtEur(tc)+'</div><div class="sl">Mis comisiones</div></div></div>';
 
   // Contacts
-  var cts=c.contactos||[];
+  // 'contacto' en la BD puede ser null, string JSON, o array
+  var cts=[];
+  if(c.contactos&&Array.isArray(c.contactos)) cts=c.contactos;
+  else if(c.contacto&&Array.isArray(c.contacto)) cts=c.contacto;
+  else if(c.contacto&&typeof c.contacto==='string'){
+    try{cts=JSON.parse(c.contacto)}catch(e){cts=[]}
+  }
   if(cts.length>0){
     html+='<div class="card"><div class="ctl">Contactos</div>';
     var dp={};cts.forEach(function(ct){var d=ct.departamento||'Otros';if(!dp[d])dp[d]=[];dp[d].push(ct)});
@@ -868,7 +855,7 @@ function renderStats(){
       tf+=l.importeFactura||0;tc+=l.comision||0;clSet[l.cliente]=1;
       if(!pCl[l.cliente])pCl[l.cliente]={f:0,c:0};pCl[l.cliente].f+=l.importeFactura||0;pCl[l.cliente].c+=l.comision||0;
       var cli=clientes.find(function(c){return c.empresa===l.cliente});
-      var sec=(cli&&cli.categoria)||'Sin sector';
+      var sec=(cli&&(cli.cat||cli.categoria))||'Sin sector';
       if(!pSec[sec])pSec[sec]={f:0,c:0};pSec[sec].f+=l.importeFactura||0;pSec[sec].c+=l.comision||0;
       if(!pFab[v2.fabricante])pFab[v2.fabricante]={f:0,c:0};pFab[v2.fabricante].f+=l.importeFactura||0;pFab[v2.fabricante].c+=l.comision||0;
     });
