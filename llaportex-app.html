@@ -716,6 +716,8 @@ function renderSugs(){
 
 function verCL(idx){
   var c=clientes[idx];if(!c)return;
+  // Debug: log all fields
+  console.log('Cliente datos:', JSON.stringify(c));
   
   // Title
   var tEl=g('mtt-cl');
@@ -726,18 +728,37 @@ function verCL(idx){
   tEl.appendChild(sp);tEl.appendChild(xb);
 
   var html='<div class="card" style="margin-bottom:12px"><div class="ctl">Datos empresa</div>';
+  // Dirección - probar varios nombres de campo posibles
   var dir=[];
-  if(c.direccion)dir.push(c.direccion);
-  if(c.cp)dir.push(c.cp);
-  if(c.poblacion)dir.push(c.poblacion);
-  if(c.provincia)dir.push('('+c.provincia+')');
+  var addr=c.direccion||c.address||c.dir||'';
+  var cp=c.cp||c.codigo_postal||c.postal||'';
+  var pob=c.poblacion||c.ciudad||c.city||'';
+  var prov=c.provincia||c.province||'';
+  if(addr)dir.push(addr);
+  if(cp)dir.push(cp);
+  if(pob)dir.push(pob);
+  if(prov)dir.push('('+prov+')');
   if(dir.length)html+='<div style="display:flex;gap:8px;margin-bottom:8px"><span>📍</span><div style="font-size:13px">'+dir.join(' ')+'</div></div>';
-  if(c.telefono)html+='<div style="margin-bottom:6px"><a href="tel:'+c.telefono+'" style="font-size:13px;color:var(--pr);text-decoration:none">📞 '+c.telefono+'</a></div>';
-  if(c.telefono2)html+='<div style="margin-bottom:6px"><a href="tel:'+c.telefono2+'" style="font-size:13px;color:var(--pr);text-decoration:none">📞 '+c.telefono2+'</a></div>';
-  if(c.email)html+='<div style="margin-bottom:6px"><a href="mailto:'+c.email+'" style="font-size:13px;color:var(--pr);text-decoration:none">✉️ '+c.email+'</a></div>';
-  if(c.cif||c.nif)html+='<div style="font-size:13px;color:var(--tx2);margin-bottom:4px">CIF/NIF: '+(c.cif||c.nif)+'</div>';
+  // Teléfonos - probar variantes
+  var tel=c.telefono||c.tel||c.phone||c.telefon||'';
+  var tel2=c.telefono2||c.tel2||c.movil||'';
+  if(tel)html+='<div style="margin-bottom:6px"><a href="tel:'+tel+'" style="font-size:13px;color:var(--pr);text-decoration:none">📞 '+tel+'</a></div>';
+  if(tel2)html+='<div style="margin-bottom:6px"><a href="tel:'+tel2+'" style="font-size:13px;color:var(--pr);text-decoration:none">📞 '+tel2+'</a></div>';
+  // Email
+  var mail=c.email||c.correo||'';
+  if(mail)html+='<div style="margin-bottom:6px"><a href="mailto:'+mail+'" style="font-size:13px;color:var(--pr);text-decoration:none">✉️ '+mail+'</a></div>';
+  // CIF/NIF
+  var cif=c.cif||c.nif||c.cif_nif||'';
+  if(cif)html+='<div style="font-size:13px;color:var(--tx2);margin-bottom:4px">CIF/NIF: '+cif+'</div>';
   if(c.com_autonoma)html+='<div style="font-size:13px;color:var(--tx2);margin-bottom:4px">C.A.: '+c.com_autonoma+'</div>';
-  if(c.categoria)html+='<div style="font-size:13px;color:var(--tx2)">Sector: '+c.categoria+'</div>';
+  var cat=c.categoria||c.sector||c.mercado||'';
+  if(cat)html+='<div style="font-size:13px;color:var(--tx2)">Sector: '+cat+'</div>';
+  if(c.estado)html+='<div style="font-size:13px;color:'+(c.estado==='activo'?'var(--ok)':'var(--tx2)')+';margin-top:4px">Estado: '+c.estado+'</div>';
+  // Mostrar todos los campos disponibles si hay pocos datos
+  var hasData=addr||tel||mail||cif;
+  if(!hasData){
+    html+='<div style="font-size:12px;color:var(--tx2);padding:8px;background:var(--s2);border-radius:var(--rs);margin-top:8px">Campos disponibles: '+Object.keys(c).filter(function(k){return c[k]&&k!=='contactos'&&k!=='id'}).join(', ')+'</div>';
+  }
   html+='</div>';
 
   // Ventas stats
