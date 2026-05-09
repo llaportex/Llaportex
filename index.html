@@ -438,6 +438,7 @@ function v(id){return(g(id)&&g(id).value)||''}
 function nm(id){return parseFloat(v(id))||0}
 function openM(id){var m=g(id);if(m)m.classList.add('open')}
 function closeM(id){var m=g(id);if(m)m.classList.remove('open')}
+function norm(s){return(s||'').toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u')}
 function fmtEur(n){return'€'+(n||0).toFixed(2)}
 
 // ══ INIT ══
@@ -662,7 +663,7 @@ async function loadClientes(){
 function renderCL(){
   var q=(g('clq').value||'').toLowerCase();
   var list=clientes.filter(function(c){
-    var mc=!clCat||(c.cat||c.categoria||'').toLowerCase().indexOf(clCat.toLowerCase())>=0;
+    var mc=!clCat||norm(c.cat||c.categoria||'').indexOf(norm(clCat))>=0;
     var mq=!q||c.empresa.toLowerCase().indexOf(q)>=0||(c.cif||'').toLowerCase().indexOf(q)>=0||(c.pob||'').toLowerCase().indexOf(q)>=0;
     return mc&&mq;
   });
@@ -800,7 +801,7 @@ async function scanBusinessCard(e){
     var b64=ev.target.result.split(',')[1];
     var prompt='Analiza esta tarjeta de visita y extrae los datos. Responde SOLO con JSON sin markdown: {"empresa":"","contacto":"","email":"","tel1":"","tel2":"","direccion":"","poblacion":"","cif":""}';
     try{
-      var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},{type:'text',text:prompt}]}]})});
+      var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},{type:'text',text:prompt}]}]})});
       var data=await resp.json();
       var parsed=JSON.parse((data.content[0].text||'').replace(/```json|```/g,'').trim());
       if(parsed.empresa)g('nc-emp').value=parsed.empresa;
@@ -894,7 +895,7 @@ async function importExt(e){
     var prompt='Extrae los datos del extracto de comisiones. Responde SOLO con JSON sin markdown: {"fabricante":"nombre empresa que emite","fecha":"YYYY-MM-DD","lineas":[{"nFactura":"","fecha":"YYYY-MM-DD","codigoCliente":"","cliente":"nombre cliente","importeFactura":0.00,"importeMercancia":0.00,"comision":0.00}]}';
     var content=isPDF?[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]:[{type:'text',text:prompt}];
     try{
-      var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,system:'Responde SOLO con JSON valido sin markdown.',messages:[{role:'user',content:content}]})});
+      var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,system:'Responde SOLO con JSON valido sin markdown.',messages:[{role:'user',content:content}]})});
       var data=await resp.json();
       extPending=JSON.parse((data.content[0].text||'').replace(/```json|```/g,'').trim());
       showExtConfirm(extPending);
@@ -1008,7 +1009,7 @@ async function importFeriaFac(e){
     var prompt='Analiza esta factura y extrae los conceptos de gasto. Responde SOLO con JSON sin markdown: {"emisor":"","nFactura":"","fecha":"YYYY-MM-DD","conceptos":"descripción de los conceptos","base":0.00,"iva":0.00,"total":0.00}';
     var content=isPDF?[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]:[{type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},{type:'text',text:prompt}];
     try{
-      var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:'Responde SOLO con JSON valido sin markdown.',messages:[{role:'user',content:content}]})});
+      var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:'Responde SOLO con JSON valido sin markdown.',messages:[{role:'user',content:content}]})});
       var data=await resp.json();
       feriafacPending=JSON.parse((data.content[0].text||'').replace(/```json|```/g,'').trim());
       showFeriaFacConfirm(feriafacPending);
@@ -1084,7 +1085,7 @@ async function importIVA(e,tipo){
     var prompt='Analiza esta factura y extrae los datos fiscales. Responde SOLO con JSON sin markdown: {"nFactura":"","fecha":"YYYY-MM-DD","emisor":"nombre empresa/persona que emite la factura","base21":0.00,"iva21":0.00,"base10":0.00,"iva10":0.00,"irpf":0.00,"total":0.00,"obs":"TARJETA o GIRO BANCARIO"}';
     var content=isPDF?[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]:[{type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},{type:'text',text:prompt}];
     try{
-      var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:'Responde SOLO con JSON valido sin markdown.',messages:[{role:'user',content:content}]})});
+      var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:'Responde SOLO con JSON valido sin markdown.',messages:[{role:'user',content:content}]})});
       var data=await resp.json();
       ivaPending=JSON.parse((data.content[0].text||'').replace(/```json|```/g,'').trim());
       ivaPending._tipo=tipo;
