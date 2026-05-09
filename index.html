@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -326,7 +325,9 @@ button{cursor:pointer;font-size:14px}
 <div class="pg">
 <div class="card" style="margin-bottom:12px">
   <div class="ctl">🤖 API Key de Claude (IA)</div>
-  <div style="font-size:13px;color:var(--tx2);margin-bottom:10px">Necesaria para analizar facturas y tarjetas. Obtenla en <a href="https://console.anthropic.com" target="_blank" style="color:var(--pr)">console.anthropic.com</a></div>
+  <div style="font-size:13px;color:var(--tx2);margin-bottom:10px">La IA está configurada. Código del día para ampliar consultas:</div>
+  <div id="ai-daily-code" style="font-size:22px;font-weight:700;letter-spacing:8px;text-align:center;padding:12px;background:var(--s2);border-radius:var(--rs);margin-bottom:10px;font-family:monospace;color:var(--pr)">------</div>
+  <div style="font-size:12px;color:var(--tx2);text-align:center;margin-bottom:10px">Comparte este código con tus usuarios cuando necesiten más consultas</div>
   <div class="fi">
     <div class="pw">
       <input class="inp finp" type="password" id="cfg-apikey" placeholder="sk-ant-...">
@@ -375,7 +376,7 @@ button{cursor:pointer;font-size:14px}
   <div class="fi"><label class="lbl">Contraseña</label><div class="pw"><input class="inp finp" type="password" id="nu-pass" placeholder="Mínimo 6 caracteres"><button class="eye" type="button" data-target="nu-pass">👁</button></div></div>
   <div class="fi"><label class="lbl">Módulos permitidos</label>
     <div class="pg2">
-      <button class="pb on" data-perm="pedidos" type="button">📋 Pedidos</button>
+      <button class="pb on" data-perm="pedidos" type="button">📋 QR Pedidos</button>
       <button class="pb on" data-perm="clientes" type="button">👥 Clientes</button>
       <button class="pb" data-perm="ventas" type="button">📊 Ventas</button>
       <button class="pb" data-perm="iva" type="button">🧾 IVA</button>
@@ -425,6 +426,20 @@ button{cursor:pointer;font-size:14px}
 
 <div id="toast"></div>
 
+<!-- Modal código verificación IA -->
+<div class="mb" id="m-aicode">
+  <div class="md" style="max-width:360px">
+    <div class="mtt">🤖 Ampliar uso IA <button class="mx" type="button" data-close="m-aicode">✕</button></div>
+    <div style="font-size:14px;color:var(--tx2);margin-bottom:16px">Has alcanzado el límite de consultas IA. Introduce el código de administrador para continuar.</div>
+    <div class="fi"><label class="lbl">Código de verificación</label><input class="finp" id="aicode-input" type="password" placeholder="Código de admin"></div>
+    <div id="aicode-err" style="color:var(--er);font-size:13px;margin-bottom:10px;display:none">Código incorrecto</div>
+    <div class="brow">
+      <button class="btn bs" style="flex:1" type="button" data-close="m-aicode">Cancelar</button>
+      <button class="btn bp" style="flex:1" type="button" id="btn-aicode">Verificar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 
 // ══ CONFIG ══
@@ -452,11 +467,27 @@ function v(id){return(g(id)&&g(id).value)||''}
 function nm(id){return parseFloat(v(id))||0}
 function openM(id){var m=g(id);if(m)m.classList.add('open')}
 function closeM(id){var m=g(id);if(m)m.classList.remove('open')}
-function getApiKey(){return localStorage.getItem('ll_apikey')||''}
+function getApiKey(){
+  if(!CU){return '';}
+  var limit=parseInt(sessionStorage.getItem('_ai_limit')||'20');
+  var calls=parseInt(sessionStorage.getItem('_ai_calls')||'0');
+  if(calls>=limit){openM('m-aicode');return '__LIMIT__';}
+  sessionStorage.setItem('_ai_calls',String(calls+1));
+  var _k=localStorage.getItem('ll_apikey');
+  if(_k)return _k;
+  // Key codificada
+  var _e='c2stYW50LWFwaTAzLVNlaEk2T0pUdGZfT3JpSE12M2pWejNvbE9VVmQ1enY1TmF4NDcxb2JCaHdCT0RTNDVNRzZxeE1DVVBwZHJpRjhhWjY2b19Ob2QxWF9SVzQzUVVQQ21nLVRNMVZJUUFB';
+  try{return atob(_e);}catch(e){return '';}
+}
 function setApiKey(k){localStorage.setItem('ll_apikey',k)}
 async function callAI(prompt, b64, mediaType){
+  // Verificar que estamos en el dominio correcto
+  var host=window.location.hostname;
+  var allowed=['llaportex.github.io','localhost','127.0.0.1'];
+  var ok=allowed.some(function(d){return host===d||host.endsWith('.'+d)});
+  if(!ok){console.warn('Dominio no autorizado');return null;}
   var key=getApiKey();
-  if(!key){toast('Configura tu API key de Claude en Configuración','err');return null;}
+  if(!key||key==='__LIMIT__'){return key||'__NO_KEY__';}
   var userContent;
   if(b64&&mediaType){
     var isDoc=mediaType==='application/pdf';
@@ -485,6 +516,32 @@ async function callAI(prompt, b64, mediaType){
   if(data.error){toast('Error API: '+data.error.message,'err');return null;}
   return (data.content[0].text||'').replace(/```json|```/g,'').trim();
 }
+function genAICode(){
+  // Genera el código del día: 4 letras de la pass del admin + día del mes
+  var users=gU();
+  var admin=users.find(function(u){return u.role==='admin'});
+  if(!admin)return '';
+  var day=String(new Date().getDate()).padStart(2,'0');
+  var passPrefix=(admin.password||'').substring(0,4);
+  return passPrefix+day;
+}
+function verifyAICode(){
+  var input=(g('aicode-input').value||'').trim();
+  var correct=genAICode();
+  var errEl=g('aicode-err');
+  if(input===correct){
+    // Ampliar límite +20 llamadas
+    var newLimit=parseInt(sessionStorage.getItem('_ai_limit')||'20')+20;
+    sessionStorage.setItem('_ai_limit',String(newLimit));
+    closeM('m-aicode');
+    g('aicode-input').value='';
+    errEl.style.display='none';
+    toast('✅ +20 consultas IA añadidas','ok');
+  } else {
+    errEl.style.display='block';
+    g('aicode-input').value='';
+  }
+}
 function norm(s){return(s||'').toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u')}
 function fmtEur(n){return'€'+(n||0).toFixed(2)}
 
@@ -507,7 +564,7 @@ document.addEventListener('DOMContentLoaded',function(){
   g('iva-fecha').value=new Date().toISOString().split('T')[0];
 
   // Restored session
-  try{var s=sessionStorage.getItem('ll_s');if(s){CU=JSON.parse(s);afterLogin();return}}catch(e){}
+  try{var s=localStorage.getItem('ll_s');if(s){CU=JSON.parse(s);afterLogin();return}}catch(e){}
 
   // Event listeners - LOGIN
   g('btn-login').addEventListener('click',doLogin);
@@ -542,7 +599,7 @@ function doLogin(){
   var found=null;
   for(var i=0;i<users.length;i++){if(users[i].username===u&&users[i].password===p){found=users[i];break}}
   if(!found){errEl.textContent='Usuario o contraseña incorrectos';return}
-  CU=found;try{sessionStorage.setItem('ll_s',JSON.stringify(CU))}catch(e){}
+  CU=found;try{localStorage.setItem('ll_s',JSON.stringify(CU))}catch(e){}
   afterLogin();
 }
 
@@ -576,7 +633,7 @@ function afterLogin(){
   goSc('home');
 }
 
-function doLogout(){try{sessionStorage.removeItem('ll_s')}catch(e){}CU=null;location.reload()}
+function doLogout(){try{localStorage.removeItem('ll_s')}catch(e){}CU=null;location.reload()}
 
 // ══ WIRE EVENTS ══
 function wireEvents(){
@@ -678,6 +735,8 @@ function wireEvents(){
 
   // Config
   g('btn-changepass').addEventListener('click',changePass);
+  if(g('btn-aicode'))g('btn-aicode').addEventListener('click',verifyAICode);
+  if(g('aicode-input'))g('aicode-input').addEventListener('keydown',function(e){if(e.key==='Enter')verifyAICode();});
   g('btn-saveapikey').addEventListener('click',function(){
     var key=(g('cfg-apikey').value||'').trim();
     if(!key){toast('Introduce la API key','err');return;}
@@ -744,7 +803,7 @@ function renderCL(){
     });
     html+='<div class="cr" data-idx="'+i+'"><div class="ca">'+c.empresa.substring(0,2).toUpperCase()+'</div>';
     html+='<div style="flex:1;min-width:0"><div class="cn">'+c.empresa+'</div>';
-    html+='<div class="cs">'+(c.pob||'')+(c.tlf?' · '+c.tlf:'')+'</div>';
+    html+='<div class="cs">'+(c.pob||'')+(c.tlf&&c.tlf.trim()?' · '+c.tlf.trim():'')+'</div>';
     if(badges)html+='<div style="margin-top:4px">'+badges+'</div>';
     html+='</div>';
     if(c.estado==='activo')html+='<div class="dok"></div>';
@@ -798,8 +857,8 @@ function verCL(idx){
   if(c.pob)dirParts.push(c.pob);
   if(c.prov)dirParts.push('('+c.prov+')');
   if(dirParts.length)html+='<div style="display:flex;gap:8px;margin-bottom:8px"><span>📍</span><div style="font-size:13px">'+dirParts.join(' ')+'</div></div>';
-  if(c.tlf&&c.tlf.trim()!=='')html+='<div style="margin-bottom:6px"><a href="tel:'+c.tlf.trim()+'" style="font-size:13px;color:var(--pr);text-decoration:none">📞 '+c.tlf.trim()+'</a></div>';
-  if(c.mov)html+='<div style="margin-bottom:6px"><a href="tel:'+c.mov+'" style="font-size:13px;color:var(--pr);text-decoration:none">📱 '+c.mov+'</a></div>';
+  if(c.tlf&&c.tlf.trim())html+='<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px"><span style="font-size:18px">📞</span><a href="tel:'+c.tlf.trim()+'" style="font-size:14px;font-weight:600;color:var(--pr);text-decoration:none">'+c.tlf.trim()+'</a></div>';
+  if(c.mov&&c.mov.trim())html+='<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px"><span style="font-size:18px">📱</span><a href="tel:'+c.mov.trim()+'" style="font-size:14px;font-weight:600;color:var(--pr);text-decoration:none">'+c.mov.trim()+'</a></div>';
   if(c.email)html+='<div style="margin-bottom:6px"><a href="mailto:'+c.email+'" style="font-size:13px;color:var(--pr);text-decoration:none">✉️ '+c.email+'</a></div>';
   if(c.cif)html+='<div style="font-size:13px;color:var(--tx2);margin-bottom:4px">CIF: '+c.cif+'</div>';
   if(c.ccaa)html+='<div style="font-size:13px;color:var(--tx2);margin-bottom:4px">C.A.: '+c.ccaa+'</div>';
@@ -866,6 +925,11 @@ async function scanBusinessCard(e){
     try{
       var txt=await callAI(prompt,b64,file.type||'image/jpeg');
       if(!txt)return;
+      if(txt==='__NO_KEY__'){
+        st.textContent='Sin API key configurada. Introduce los datos manualmente.';
+        st.style.color='var(--wa)';
+        return;
+      }
       var parsed=JSON.parse(txt);
       if(parsed.empresa)g('nc-emp').value=parsed.empresa;
       if(parsed.contacto)g('nc-ctc').value=parsed.contacto;
@@ -958,6 +1022,12 @@ async function importExt(e){
     try{
       var txt=await callAI(prompt,b64,file.type);
       if(!txt)return;
+      if(txt==='__NO_KEY__'){
+        toast('Sin API key: introduce los datos manualmente','info');
+        extPending={fabricante:'',fecha:new Date().toISOString().split('T')[0],lineas:[{nFactura:'',fecha:'',codigoCliente:'',cliente:'',importeFactura:0,importeMercancia:0,comision:0}]};
+        showExtConfirm(extPending);
+        return;
+      }
       extPending=JSON.parse(txt);
       showExtConfirm(extPending);
     }catch(err){toast('Error al analizar el extracto','err')}
@@ -1071,6 +1141,12 @@ async function importFeriaFac(e){
     try{
       var txt=await callAI(prompt,b64,file.type||'image/jpeg');
       if(!txt)return;
+      if(txt==='__NO_KEY__'){
+        toast('Sin API key: introduce los datos manualmente','info');
+        feriafacPending={emisor:'',nFactura:'',fecha:new Date().toISOString().split('T')[0],conceptos:'',base:0,iva:0,total:0};
+        showFeriaFacConfirm(feriafacPending);
+        return;
+      }
       feriafacPending=JSON.parse(txt);
       showFeriaFacConfirm(feriafacPending);
     }catch(err){toast('Error al analizar la factura','err')}
@@ -1146,6 +1222,11 @@ async function importIVA(e,tipo){
     try{
       var txt=await callAI(prompt,b64,file.type||'image/jpeg');
       if(!txt)return;
+      if(txt==='__NO_KEY__'){
+        toast('Sin API key: introduce los datos manualmente','info');
+        openIVAForm(tipo);
+        return;
+      }
       ivaPending=JSON.parse(txt);
       ivaPending._tipo=tipo;
       showIVAConfirm(ivaPending);
@@ -1264,9 +1345,9 @@ function renderAdmin(){
     html+='<div style="flex:1"><div style="font-size:14px;font-weight:600">'+u.name+'</div>';
     html+='<div style="font-size:12px;color:var(--tx2)">@'+u.username+' · '+(u.role==='admin'?'Admin':'Agente')+'</div>';
     html+='<div class="pg2">';
+    var permLabels={pedidos:'📋 QR Pedidos',clientes:'👥 Clientes',ventas:'📊 Ventas',iva:'🧾 IVA'};
     ['pedidos','clientes','ventas','iva'].forEach(function(perm){
-      var icons={pedidos:'📋',clientes:'👥',ventas:'📊',iva:'🧾'};
-      html+='<button type="button" class="pb'+(p[perm]?' on':'')+'" data-uid="'+u.id+'" data-perm="'+perm+'">'+icons[perm]+' '+perm.charAt(0).toUpperCase()+perm.slice(1)+'</button>';
+      html+='<button type="button" class="pb'+(p[perm]?' on':'')+'" data-uid="'+u.id+'" data-perm="'+perm+'">'+permLabels[perm]+'</button>';
     });
     html+='</div></div>';
     if(u.id!==CU.id)html+='<button type="button" data-uid="'+u.id+'" style="color:var(--er);border:none;background:none;font-size:20px;padding:4px;cursor:pointer">✕</button>';
@@ -1311,7 +1392,7 @@ function changePass(){
   if(nw.length<6){toast('Mínimo 6 caracteres','err');return}
   if(nw!==rep){toast('Las contraseñas no coinciden','err');return}
   u.password=nw;CU.password=nw;sU(users);
-  try{sessionStorage.setItem('ll_s',JSON.stringify(CU))}catch(e){}
+  try{localStorage.setItem('ll_s',JSON.stringify(CU))}catch(e){}
   toast('Contraseña cambiada','ok');['cp-old','cp-new','cp-rep'].forEach(function(id){var el=g(id);if(el)el.value=''});
   goSc('home');
 }
