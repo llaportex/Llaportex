@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -322,7 +323,20 @@ button{cursor:pointer;font-size:14px}
 </div>
 <div class="sc" id="sc-cfg">
 <div class="mh"><button class="bk" id="bk-cfg" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button><span class="mt">Configuración</span></div>
-<div class="pg"><div class="card"><div class="ctl">🔑 Cambiar contraseña</div><div class="fi"><label class="lbl">Contraseña actual</label><div class="pw"><input class="inp finp" type="password" id="cp-old" placeholder="Contraseña actual"><button class="eye" type="button" data-target="cp-old">👁</button></div></div><div class="fi"><label class="lbl">Nueva contraseña</label><div class="pw"><input class="inp finp" type="password" id="cp-new" placeholder="Mínimo 6 caracteres"><button class="eye" type="button" data-target="cp-new">👁</button></div></div><div class="fi"><label class="lbl">Repetir nueva</label><div class="pw"><input class="inp finp" type="password" id="cp-rep" placeholder="Repite la contraseña"><button class="eye" type="button" data-target="cp-rep">👁</button></div></div><button class="btn bp bfw" id="btn-changepass" type="button">Guardar contraseña</button></div></div>
+<div class="pg">
+<div class="card" style="margin-bottom:12px">
+  <div class="ctl">🤖 API Key de Claude (IA)</div>
+  <div style="font-size:13px;color:var(--tx2);margin-bottom:10px">Necesaria para analizar facturas y tarjetas. Obtenla en <a href="https://console.anthropic.com" target="_blank" style="color:var(--pr)">console.anthropic.com</a></div>
+  <div class="fi">
+    <div class="pw">
+      <input class="inp finp" type="password" id="cfg-apikey" placeholder="sk-ant-...">
+      <button class="eye" type="button" data-target="cfg-apikey">👁</button>
+    </div>
+  </div>
+  <button class="btn bp bfw" id="btn-saveapikey" type="button">Guardar API Key</button>
+  <div id="apikey-status" style="font-size:12px;margin-top:8px;text-align:center"></div>
+</div>
+<div class="card"><div class="ctl">🔑 Cambiar contraseña</div><div class="fi"><label class="lbl">Contraseña actual</label><div class="pw"><input class="inp finp" type="password" id="cp-old" placeholder="Contraseña actual"><button class="eye" type="button" data-target="cp-old">👁</button></div></div><div class="fi"><label class="lbl">Nueva contraseña</label><div class="pw"><input class="inp finp" type="password" id="cp-new" placeholder="Mínimo 6 caracteres"><button class="eye" type="button" data-target="cp-new">👁</button></div></div><div class="fi"><label class="lbl">Repetir nueva</label><div class="pw"><input class="inp finp" type="password" id="cp-rep" placeholder="Repite la contraseña"><button class="eye" type="button" data-target="cp-rep">👁</button></div></div><button class="btn bp bfw" id="btn-changepass" type="button">Guardar contraseña</button></div></div>
 </div>
 <div class="sc" id="sc-adm">
 <div class="mh"><button class="bk" id="bk-adm" type="button"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button><span class="mt">Usuarios</span><button class="btn bp bsm" id="btn-newusr" type="button" style="margin-left:auto">+ Usuario</button></div>
@@ -438,6 +452,39 @@ function v(id){return(g(id)&&g(id).value)||''}
 function nm(id){return parseFloat(v(id))||0}
 function openM(id){var m=g(id);if(m)m.classList.add('open')}
 function closeM(id){var m=g(id);if(m)m.classList.remove('open')}
+function getApiKey(){return localStorage.getItem('ll_apikey')||''}
+function setApiKey(k){localStorage.setItem('ll_apikey',k)}
+async function callAI(prompt, b64, mediaType){
+  var key=getApiKey();
+  if(!key){toast('Configura tu API key de Claude en Configuración','err');return null;}
+  var userContent;
+  if(b64&&mediaType){
+    var isDoc=mediaType==='application/pdf';
+    userContent=isDoc?
+      [{type:'document',source:{type:'base64',media_type:mediaType,data:b64}},{type:'text',text:prompt}]:
+      [{type:'image',source:{type:'base64',media_type:mediaType,data:b64}},{type:'text',text:prompt}];
+  } else {
+    userContent=[{type:'text',text:prompt}];
+  }
+  var resp=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':key,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:2000,
+      system:'Responde SOLO con JSON valido sin markdown ni texto adicional.',
+      messages:[{role:'user',content:userContent}]
+    })
+  });
+  var data=await resp.json();
+  if(data.error){toast('Error API: '+data.error.message,'err');return null;}
+  return (data.content[0].text||'').replace(/```json|```/g,'').trim();
+}
 function norm(s){return(s||'').toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u')}
 function fmtEur(n){return'€'+(n||0).toFixed(2)}
 
@@ -631,6 +678,22 @@ function wireEvents(){
 
   // Config
   g('btn-changepass').addEventListener('click',changePass);
+  g('btn-saveapikey').addEventListener('click',function(){
+    var key=(g('cfg-apikey').value||'').trim();
+    if(!key){toast('Introduce la API key','err');return;}
+    if(!key.startsWith('sk-ant')){toast('La key debe empezar por sk-ant-...','err');return;}
+    setApiKey(key);
+    g('apikey-status').textContent='✅ API Key guardada correctamente';
+    g('apikey-status').style.color='var(--ok)';
+    g('cfg-apikey').value='';
+    toast('API Key guardada','ok');
+  });
+  // Mostrar si ya hay key configurada
+  var existingKey=getApiKey();
+  if(existingKey&&g('apikey-status')){
+    g('apikey-status').textContent='✅ API Key configurada (sk-ant-...'+existingKey.slice(-4)+')';
+    g('apikey-status').style.color='var(--ok)';
+  }
 }
 
 // ══ NAVIGATION ══
@@ -735,7 +798,7 @@ function verCL(idx){
   if(c.pob)dirParts.push(c.pob);
   if(c.prov)dirParts.push('('+c.prov+')');
   if(dirParts.length)html+='<div style="display:flex;gap:8px;margin-bottom:8px"><span>📍</span><div style="font-size:13px">'+dirParts.join(' ')+'</div></div>';
-  if(c.tlf)html+='<div style="margin-bottom:6px"><a href="tel:'+c.tlf+'" style="font-size:13px;color:var(--pr);text-decoration:none">📞 '+c.tlf+'</a></div>';
+  if(c.tlf&&c.tlf.trim()!=='')html+='<div style="margin-bottom:6px"><a href="tel:'+c.tlf.trim()+'" style="font-size:13px;color:var(--pr);text-decoration:none">📞 '+c.tlf.trim()+'</a></div>';
   if(c.mov)html+='<div style="margin-bottom:6px"><a href="tel:'+c.mov+'" style="font-size:13px;color:var(--pr);text-decoration:none">📱 '+c.mov+'</a></div>';
   if(c.email)html+='<div style="margin-bottom:6px"><a href="mailto:'+c.email+'" style="font-size:13px;color:var(--pr);text-decoration:none">✉️ '+c.email+'</a></div>';
   if(c.cif)html+='<div style="font-size:13px;color:var(--tx2);margin-bottom:4px">CIF: '+c.cif+'</div>';
@@ -799,11 +862,11 @@ async function scanBusinessCard(e){
   var reader=new FileReader();
   reader.onload=async function(ev){
     var b64=ev.target.result.split(',')[1];
-    var prompt='Analiza esta tarjeta de visita y extrae los datos. Responde SOLO con JSON sin markdown: {"empresa":"","contacto":"","email":"","tel1":"","tel2":"","direccion":"","poblacion":"","cif":""}';
+    var prompt='Analiza esta tarjeta de visita y extrae los datos. Responde SOLO con JSON: {"empresa":"","contacto":"","email":"","tel1":"","tel2":"","direccion":"","poblacion":"","cif":""}';
     try{
-      var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},{type:'text',text:prompt}]}]})});
-      var data=await resp.json();
-      var parsed=JSON.parse((data.content[0].text||'').replace(/```json|```/g,'').trim());
+      var txt=await callAI(prompt,b64,file.type||'image/jpeg');
+      if(!txt)return;
+      var parsed=JSON.parse(txt);
       if(parsed.empresa)g('nc-emp').value=parsed.empresa;
       if(parsed.contacto)g('nc-ctc').value=parsed.contacto;
       if(parsed.email)g('nc-email').value=parsed.email;
@@ -891,15 +954,13 @@ async function importExt(e){
   var reader=new FileReader();
   reader.onload=async function(ev){
     var b64=ev.target.result.split(',')[1];
-    var isPDF=file.type==='application/pdf';
-    var prompt='Extrae los datos del extracto de comisiones. Responde SOLO con JSON sin markdown: {"fabricante":"nombre empresa que emite","fecha":"YYYY-MM-DD","lineas":[{"nFactura":"","fecha":"YYYY-MM-DD","codigoCliente":"","cliente":"nombre cliente","importeFactura":0.00,"importeMercancia":0.00,"comision":0.00}]}';
-    var content=isPDF?[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]:[{type:'text',text:prompt}];
+    var prompt='Extrae los datos del extracto de comisiones. Responde SOLO con JSON: {"fabricante":"nombre empresa","fecha":"YYYY-MM-DD","lineas":[{"nFactura":"","fecha":"YYYY-MM-DD","codigoCliente":"","cliente":"nombre","importeFactura":0.00,"importeMercancia":0.00,"comision":0.00}]}';
     try{
-      var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,system:'Responde SOLO con JSON valido sin markdown.',messages:[{role:'user',content:content}]})});
-      var data=await resp.json();
-      extPending=JSON.parse((data.content[0].text||'').replace(/```json|```/g,'').trim());
+      var txt=await callAI(prompt,b64,file.type);
+      if(!txt)return;
+      extPending=JSON.parse(txt);
       showExtConfirm(extPending);
-    }catch(err){toast('Error al analizar','err')}
+    }catch(err){toast('Error al analizar el extracto','err')}
   };
   reader.readAsDataURL(file);
 }
@@ -1007,13 +1068,12 @@ async function importFeriaFac(e){
     var b64=ev.target.result.split(',')[1];
     var isPDF=file.type==='application/pdf';
     var prompt='Analiza esta factura y extrae los conceptos de gasto. Responde SOLO con JSON sin markdown: {"emisor":"","nFactura":"","fecha":"YYYY-MM-DD","conceptos":"descripción de los conceptos","base":0.00,"iva":0.00,"total":0.00}';
-    var content=isPDF?[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]:[{type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},{type:'text',text:prompt}];
     try{
-      var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:'Responde SOLO con JSON valido sin markdown.',messages:[{role:'user',content:content}]})});
-      var data=await resp.json();
-      feriafacPending=JSON.parse((data.content[0].text||'').replace(/```json|```/g,'').trim());
+      var txt=await callAI(prompt,b64,file.type||'image/jpeg');
+      if(!txt)return;
+      feriafacPending=JSON.parse(txt);
       showFeriaFacConfirm(feriafacPending);
-    }catch(err){toast('Error al analizar','err')}
+    }catch(err){toast('Error al analizar la factura','err')}
   };
   reader.readAsDataURL(file);
 }
@@ -1083,11 +1143,10 @@ async function importIVA(e,tipo){
     var b64=ev.target.result.split(',')[1];
     var isPDF=file.type==='application/pdf';
     var prompt='Analiza esta factura y extrae los datos fiscales. Responde SOLO con JSON sin markdown: {"nFactura":"","fecha":"YYYY-MM-DD","emisor":"nombre empresa/persona que emite la factura","base21":0.00,"iva21":0.00,"base10":0.00,"iva10":0.00,"irpf":0.00,"total":0.00,"obs":"TARJETA o GIRO BANCARIO"}';
-    var content=isPDF?[{type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},{type:'text',text:prompt}]:[{type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},{type:'text',text:prompt}];
     try{
-      var resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:400,system:'Responde SOLO con JSON valido sin markdown.',messages:[{role:'user',content:content}]})});
-      var data=await resp.json();
-      ivaPending=JSON.parse((data.content[0].text||'').replace(/```json|```/g,'').trim());
+      var txt=await callAI(prompt,b64,file.type||'image/jpeg');
+      if(!txt)return;
+      ivaPending=JSON.parse(txt);
       ivaPending._tipo=tipo;
       showIVAConfirm(ivaPending);
     }catch(err){toast('Error al analizar. Usa entrada manual.','err')}
